@@ -8,6 +8,16 @@ shapes1 = {
     1:{"x": 3, "y": 3},
 }
 
+symbols = {
+    "land": "^",
+    "forest": "*",
+    "lake": "_",
+    "river": " ",
+    "city": "!",
+    "gold" : "@",
+    "mountain" : "M",
+}
+
 # Function that creates the basic map, defines stuff like size, legend, positions on left/right side, ect
 def Start():
     global MAP
@@ -15,7 +25,6 @@ def Start():
     global PIL
     global Legend
     global shapes
-    global presets
     global l
     global a
     global b
@@ -37,7 +46,7 @@ def Start():
     A = a*b
     MAP = {}
     for x in range(A):
-        MAP[x] = "~"
+        MAP[x] = symbols["land"]
     RS = [b]
     LS = [0]
     i = 0
@@ -236,7 +245,7 @@ def Clear():
     global MAP
     for i in MAP:
         if MAP[i] == "#":
-            MAP[i] = " "
+            MAP[i] = symbols["river"]
 
 # Function that adds random stuff to the empty parts of the map
 def AddStuff():
@@ -264,15 +273,15 @@ def LegendC():
     Hname = Hnamer()
     Dname = Dnamer()
     Meaning = {
-    "*": "Lake             |",
-    "@": Hname,
-    "!": "Battle           |",
-    ".": "Mountain         |",
-    "+": "Mintar           |",
-    "%": "Thraf            |",
+    "^": "Land             |",
+    "*": "Forest           |",
+    "_": "Lake             |",
+    " ": "River            |",
+    "!": "City             |",
+    "$": "Gold             |",
     "&": Dname,
-    "#": "Impom            |",
-    "$": "Gold             |"
+    "@": Hname,
+    "M": "Mountain         |",
     }
     Legend = {
         0: " +----------------------+",
@@ -280,7 +289,7 @@ def LegendC():
         2: " +----------------------+"
     }
     n = 4
-    for i in PIL:
+    for i in Meaning:
         Legend[n] = " | " + i + " = " + Meaning[i]
         n += 1
     Legend[a - 1] = " +----------------------+"
