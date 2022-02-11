@@ -97,19 +97,6 @@ def PrintM():
         x = 1
         i += 1
 
-# Function that checks if you can place a specified rectangle(Box) on a specified position(x)
-def CPlaceB(x):
-    global MAP
-    global Box
-    global a
-    global b
-    y = int(x/b) + 1
-    t = x - ((y - 1)*b)
-    if (t + shapes[Box]["x"]) <= b and (y + shapes[Box]["y"]) <= a:
-        return True
-    else:
-        return False
-
 # Function that places Box on x
 def PlaceB(i):
     global Box
@@ -123,9 +110,13 @@ def PlaceB(i):
             MAP[i] = "#"
             i +=1
             x += 1
+            if i%b == 0:
+                break
         i += (b - shapes[Box]["x"])
         y += 1
         x = 0
+        if i >= A:
+            break
 
 
 def PickLocations(begin, end):
@@ -164,7 +155,6 @@ def DesignLocations():
 def AddB(i):
     global Box
     Box = random.choice(list(shapes.keys()))
-    #if CPlaceB(i) == True:
     PlaceB(i)
     return None
 
