@@ -126,14 +126,14 @@ def PickLocations(begin, end):
    end_row = int(end/b)
    end_column = end - end_row * b
 
-   mid_row = int((begin_row + end_row) / 2)
-   mid_column = int((begin_column + end_column) / 2)
-   print(mid_row, mid_column)
+   mid_row = random.randint(begin_row, end_row) 
+   mid_column = random.randint(begin_column, end_column)
    mid = mid_row * b + mid_column
-   if ((mid_row == begin_row) and (mid_column == begin_column)) or (mid in Points) :
+   if ((mid_row == begin_row) and (mid_column == begin_column)):
        return
    else:
-       Points.append(mid)
+       if not mid in Points:
+           Points.append(mid)
        PickLocations(begin, mid)
        PickLocations(mid, end)
 
@@ -173,7 +173,7 @@ def Outline():
                 a = MAP[x]
             except:
                 a = " "
-            if a == "~":
+            if a == symbols["land"]:
                 Sides["U"] = 1
             # - U
             # - D
@@ -182,7 +182,7 @@ def Outline():
                 a = MAP[x]
             except:
                 a = " "
-            if a == "~":
+            if a == symbols["land"]:
                 Sides["D"] = 1
             # - D
             # - L
@@ -194,7 +194,7 @@ def Outline():
                     a = MAP[x]
                 except:
                     a = " "
-                if a == "~":
+                if a == symbols["land"]:
                     Sides["L"] = 1
             # - L
             # - R
@@ -206,7 +206,7 @@ def Outline():
                     a = MAP[x]
                 except:
                     a = " "
-                if a == "~":
+                if a == symbols["land"]:
                     Sides["R"] = 1
             # - R
             if Sides["U"] == 1 and Sides["D"] == 1 and Sides["R"] == 1:
