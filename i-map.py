@@ -1,5 +1,3 @@
-#  global_map[i] ==  h- i-map
-
 import random
 import os
 
@@ -13,10 +11,10 @@ SEA_BOX_SHAPES_1 = {
 }
 
 RIVER_BOX_SHAPES_1 = {
-    1:{"x": 5, "y": 4},
-    2:{"x": 4, "y": 5},
-    3:{"x": 4, "y": 6},
-    4:{"x": 3, "y": 4},
+    1:{"x": 3, "y": 4},
+    2:{"x": 4, "y": 3},
+    3:{"x": 4, "y": 2},
+    4:{"x": 3, "y": 3},
 }
 
 TOWN_BOX_SHAPES_1 = {
@@ -125,16 +123,16 @@ def pick_locations(begin, end):
    local_end_row = end // global_width
    local_end_column = end - local_end_row * global_width
 
+   if min(local_begin_row, local_end_row) + 1 >= max(local_begin_row, local_end_row) and min(local_begin_column, local_end_column) +1 >= max(local_begin_column, local_end_column):
+       return
+
    local_mid_row = random.randint(min(local_begin_row, local_end_row), max(local_begin_row, local_end_row))
    local_mid_column = random.randint(min(local_begin_column, local_end_column), max(local_begin_column, local_end_column))
-   if ((local_mid_row == min(local_begin_row, local_end_row)) and (local_mid_column == min(local_begin_column, local_end_column))):
-       return
-   else:
-       local_mid = local_mid_row * global_width + local_mid_column
-       if not local_mid in global_points:
-           global_points.append(local_mid)
-       pick_locations(begin, local_mid)
-       pick_locations(local_mid, end)
+   local_mid = local_mid_row * global_width + local_mid_column
+   if not local_mid in global_points:
+       global_points.append(local_mid)
+   pick_locations(begin, local_mid)
+   pick_locations(local_mid, end)
 
 # Function that design which locations to place box
 def design_locations(geo_type):
@@ -142,7 +140,7 @@ def design_locations(geo_type):
     global_points = []
     local_i = 0
     if geo_type == "river":
-        for local_i in range(6):
+        for local_i in range(7):
             point_a = random.choice(global_border)
             point_b = random.choice(global_border)
             global_points.append(point_a)
@@ -315,6 +313,11 @@ def outline_border(symbol):
             else:
                 pass
 
+def build_water():
+    build_sea()
+    build_river()
+    outline_border(GLOBAL_MAP_SYMBOLS["river"])
+
 def build_river():
     global global_box
     global global_shapes
@@ -323,7 +326,6 @@ def build_river():
     for x in points:
         global_box = random.choice(list(global_shapes.keys()))
         place_box(x, GLOBAL_MAP_SYMBOLS["river"])
-    outline_border(GLOBAL_MAP_SYMBOLS["river"])
 
 def build_sea():
     global global_box
@@ -377,8 +379,7 @@ while True:
     while cmd != "1":
         cmd = input(">")
     initialize_map()
-    build_sea()
-    build_river()
+    build_water()
     #build_towns()
     build_mountains()
     build_mineral()
