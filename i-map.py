@@ -4,11 +4,19 @@ import random
 import os
 
 # - Lists of rectangles
-RIVER_BOX_SHAPES_1 = {
+SEA_BOX_SHAPES_1 = {
     1:{"x": 5, "y": 5},
+    2:{"x": 7, "y": 4},
+    3:{"x": 8, "y": 5},
+    4:{"x": 6, "y": 7},
+    5:{"x": 5, "y": 9},
+}
+
+RIVER_BOX_SHAPES_1 = {
+    1:{"x": 5, "y": 4},
     2:{"x": 4, "y": 5},
-    3:{"x": 4, "y": 4},
-    4:{"x": 5, "y": 6},
+    3:{"x": 4, "y": 6},
+    4:{"x": 3, "y": 4},
 }
 
 TOWN_BOX_SHAPES_1 = {
@@ -28,7 +36,7 @@ MOUNTAIN_BOX_SHAPES_1 = {
 MINERAL_BOX_SHAPES_1 = {
     1:{"x": 7, "y": 5},
     2:{"x": 3, "y": 5},
-    3:{"x": 9, "y": 4},
+    3:{"x": 9, "y": 8},
     4:{"x": 5, "y": 6},
 }
 
@@ -37,6 +45,7 @@ GLOBAL_MAP_SYMBOLS = {
     "forest": "*",
     "lake": "_",
     "river": " ",
+    "sea": " ",
     "town": "P",
     "gold" : "$",
     "mountain" : "M",
@@ -53,8 +62,11 @@ def initialize_map():
     global global_height
     global global_width
     global global_map_size
+    global global_up_border
+    global global_down_border
     global global_left_border
     global global_right_border
+    global global_border_group
     global global_border
     global global_input_area_height
     global global_info_bar_width
@@ -63,7 +75,7 @@ def initialize_map():
     global_map = {}
     global_input_area_height = 3
     global_info_bar_width = 25
-    global_curve_corner_param = 3
+    global_curve_corner_param = 5
     size = os.get_terminal_size()
     global_height = size.lines - global_input_area_height
     global_width = size.columns - global_info_bar_width
@@ -71,8 +83,11 @@ def initialize_map():
     for x in range(global_map_size):
         global_map[x] = GLOBAL_MAP_SYMBOLS["land"]
     global_border = [x for x in range(global_map_size) if (x // global_width in (0, global_height - 1)) or (x % global_width == 0) or ((x + 1) % global_width == 0)]
+    global_up_border = [x for x in range(global_map_size) if (x // global_width == 0)]
+    global_down_border = [x for x in range(global_map_size) if (x // global_width == global_height - 1)]
     global_left_border = [x for x in range(global_map_size) if (x % global_width == 0)]
     global_right_border = [x for x in range(global_map_size) if ((x + 0) % global_width == 0)]
+    global_border_group = [global_up_border, global_down_border, global_left_border, global_right_border]
 
 # Functions that name stuff
 def random_name():
@@ -130,11 +145,19 @@ def design_locations(geo_type):
         for local_i in range(6):
             point_a = random.choice(global_border)
             point_b = random.choice(global_border)
-            print(point_a // global_width, point_a % global_width)
-            print(point_b // global_width, point_b % global_width)
             global_points.append(point_a)
             global_points.append(point_b)
             pick_locations(point_a, point_b)
+        return global_points
+    elif geo_type == "sea":
+        for local_i in range(2):
+            # Actually, only left and up border and build sea, as box is built towards right and down orientation
+            for x in range(4):
+                point_a = random.choice(global_border_group[x])
+                point_b = random.choice(global_border_group[x])
+                global_points.append(point_a)
+                global_points.append(point_b)
+                pick_locations(point_a, point_b)
         return global_points
     elif geo_type == "forest":
         for local_i in global_map:
@@ -148,12 +171,12 @@ def design_locations(geo_type):
             global_points.append(point_a)
         return global_points
     elif geo_type == "mountain":
-        for local_i in range(10):
+        for local_i in range(20):
             point_a = random.randint(0, global_map_size - 1)
             global_points.append(point_a)
         return global_points
     elif geo_type == "gold":
-        for local_i in range(5):
+        for local_i in range(10):
             point_a = random.randint(0, global_map_size - 1)
             global_points.append(point_a)
         return global_points
@@ -302,6 +325,15 @@ def build_river():
         place_box(x, GLOBAL_MAP_SYMBOLS["river"])
     outline_border(GLOBAL_MAP_SYMBOLS["river"])
 
+def build_sea():
+    global global_box
+    global global_shapes
+    global_shapes = SEA_BOX_SHAPES_1
+    points = design_locations("sea")
+    for x in points:
+        global_box = random.choice(list(global_shapes.keys()))
+        place_box(x, GLOBAL_MAP_SYMBOLS["sea"])
+
 def build_forest():
     global global_box
     points = design_locations("forest")
@@ -345,8 +377,9 @@ while True:
     while cmd != "1":
         cmd = input(">")
     initialize_map()
+    build_sea()
     build_river()
-    build_towns()
+    #build_towns()
     build_mountains()
     build_mineral()
     build_forest()
