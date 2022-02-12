@@ -5,7 +5,7 @@ import os
 
 # - Lists of rectangles
 GLOBAL_SHAPES_1 = {
-    1:{"x": 5, "y": 5},
+    1:{"x": 4, "y": 4},
 }
 
 GLOBAL_MAP_SYMBOLS = {
@@ -13,7 +13,7 @@ GLOBAL_MAP_SYMBOLS = {
     "forest": "*",
     "lake": "_",
     "river": " ",
-    "city": "!",
+    "town": "!",
     "gold" : "@",
     "mountain" : "M",
 }
@@ -96,11 +96,11 @@ def pick_locations(begin, end):
        pick_locations(local_mid, end)
 
 # Function that design which locations to place box
-def design_locations(type):
+def design_locations(geo_type):
     global global_points
     global_points = []
     local_i = 0
-    if type == "river":
+    if geo_type == "river":
         for local_i in range(6):
             point_a = random.choice(global_border)
             point_b = random.choice(global_border)
@@ -109,6 +109,26 @@ def design_locations(type):
             global_points.append(point_a)
             global_points.append(point_b)
             pick_locations(point_a, point_b)
+        return global_points
+    elif geo_type == "forest":
+        for local_i in range(20):
+            point_a = random.randint(0, global_map_size - 1)
+            global_points.append(point_a)
+        return global_points
+    elif geo_type == "town":
+        for local_i in range(20):
+            point_a = random.randint(0, global_map_size - 1)
+            global_points.append(point_a)
+        return global_points
+    elif geo_type == "mountain":
+        for local_i in range(5):
+            point_a = random.randint(0, global_map_size - 1)
+            global_points.append(point_a)
+        return global_points
+    elif geo_type == "gold":
+        for local_i in range(5):
+            point_a = random.randint(0, global_map_size - 1)
+            global_points.append(point_a)
         return global_points
     else:
         return None
@@ -189,18 +209,33 @@ def build_river():
         place_box(x, GLOBAL_MAP_SYMBOLS["river"])
     outline_border(GLOBAL_MAP_SYMBOLS["river"])
 
-#def BuildSea():
-#
-#
-#def BuildTowns():
-#
-#
-#def BuildMountains():
-#
-#
-#def BuildMineral():
+def build_forest():
+    global global_box
+    points = design_locations("forest")
+    for x in points:
+        global_box = random.choice(list(global_shapes.keys()))
+        place_box(x, GLOBAL_MAP_SYMBOLS["forest"])
 
+def build_towns():
+    global global_box
+    points = design_locations("town")
+    for x in points:
+        global_box = random.choice(list(global_shapes.keys()))
+        place_box(x, GLOBAL_MAP_SYMBOLS["town"])
 
+def build_mountains():
+    global global_box
+    points = design_locations("mountain")
+    for x in points:
+        global_box = random.choice(list(global_shapes.keys()))
+        place_box(x, GLOBAL_MAP_SYMBOLS["mountain"])
+
+def build_mineral():
+    global global_box
+    points = design_locations("gold")
+    for x in points:
+        global_box = random.choice(list(global_shapes.keys()))
+        place_box(x, GLOBAL_MAP_SYMBOLS["gold"])
 
 # Main loop
 while True:
@@ -210,10 +245,10 @@ while True:
         cmd = input(">")
     initialize_map()
     build_river()
-    #BuildTowns()
-    #BuildMountains()
-    #BuildMineral()
-    #BuildSea()
+    build_forest()
+    build_towns()
+    build_mountains()
+    build_mineral()
     print("")
     print_map()
     print("")
