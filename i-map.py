@@ -18,10 +18,12 @@ RIVER_BOX_SHAPES_1 = {
 }
 
 TOWN_BOX_SHAPES_1 = {
-    1:{"x": 6, "y": 7},
-    2:{"x": 7, "y": 5},
-    3:{"x": 6, "y": 8},
-    4:{"x": 10, "y": 6},
+    1:{"x": 3, "y": 3},
+    2:{"x": 4, "y": 4},
+    3:{"x": 2, "y": 2},
+    4:{"x": 1, "y": 2},
+    5:{"x": 2, "y": 2},
+    6:{"x": 1, "y": 2},
 }
 
 MOUNTAIN_BOX_SHAPES_1 = {
@@ -166,10 +168,28 @@ def design_locations(geo_type):
                 if random.randint(0, 5) == 1:
                     global_points.append(local_i)
         return global_points
+    # Town should built near water, mineral
     elif geo_type == "town":
-        for local_i in range(20):
-            point_a = random.randint(0, global_map_size - 1)
-            global_points.append(point_a)
+        for local_i in global_map:
+            town_suitability = 0
+            for x in range(3):
+                for y in range(3):
+                    try:
+                        side_symbol = global_map[local_i + y * global_width + x]
+                    except:
+                        side_symbol = GLOBAL_MAP_SYMBOLS["sea"]
+
+                    if side_symbol == GLOBAL_MAP_SYMBOLS["river"] or side_symbol == GLOBAL_MAP_SYMBOLS["sea"]:
+                        town_suitability += random.randint(30, 130)
+                    elif side_symbol == GLOBAL_MAP_SYMBOLS["gold"]:
+                        town_suitability += random.randint(20, 150)
+                    elif side_symbol == GLOBAL_MAP_SYMBOLS["mountain"]:
+                        town_suitability += random.randint(20, 60)
+                    else:
+                        town_suitability += random.randint(0, 100)
+
+            if town_suitability >= 700:
+                global_points.append(local_i)
         return global_points
     elif geo_type == "mountain":
         for local_i in range(20):
@@ -353,7 +373,6 @@ def build_towns():
     for x in points:
         global_box = random.choice(list(global_shapes.keys()))
         place_box(x, GLOBAL_MAP_SYMBOLS["town"])
-    curve_corners(GLOBAL_MAP_SYMBOLS["town"])
 
 def build_mountains():
     global global_box
@@ -383,10 +402,9 @@ while True:
         cmd = input(">")
     initialize_map()
     build_water()
-    #build_towns()
     build_mountains()
     build_mineral()
     build_forest()
-    print("")
+    build_towns()
     print_map()
     print("")
