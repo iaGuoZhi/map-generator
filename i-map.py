@@ -34,11 +34,13 @@ def initialize_map():
     global global_border
     global global_input_area_height
     global global_info_bar_width
+    global global_curve_corner_param
 
     global_map = {}
     global_shapes = GLOBAL_SHAPES_1
     global_input_area_height = 3
     global_info_bar_width = 25
+    global_curve_corner_param = 4
     size = os.get_terminal_size()
     global_height = size.lines - global_input_area_height
     global_width = size.columns - global_info_bar_width
@@ -133,6 +135,70 @@ def design_locations(geo_type):
     else:
         return None
 
+# Function that smooths out long corners
+def curve_corners(symbol):
+    t = 0
+    while t <= global_curve_corner_param:
+        t += 1
+        for i in global_map:
+            if  global_map[i] == symbol:
+                rectangle_sides = 0
+                # - U
+                x = i - global_width
+                try:
+                    up_symbol = global_map[x]
+                except:
+                    up_symbol = GLOBAL_TOOL_SYMBOLS["illegal"]
+                if up_symbol != symbol:
+                    rectangle_sides += 1
+                # - U
+                # - D
+                x = i + global_width
+                try:
+                    down_symbol = global_map[x]
+                except:
+                    down_symbol = GLOBAL_TOOL_SYMBOLS["illegal"]
+                if up_symbol != symbol:
+                    rectangle_sides += 1
+                # - D
+                # - L
+                if i in global_left_border:
+                    pass
+                else:
+                    x = i - 1
+                    try:
+                        left_symbol = global_map[x]
+                    except:
+                        left_symbol = GLOBAL_TOOL_SYMBOLS["illegal"]
+                    if up_symbol != symbol:
+                        rectangle_sides += 1
+                # - L
+                # - R
+                if i + 1 in global_right_border:
+                    pass
+                else:
+                    x = i + 1
+                    try:
+                        right_symbol = global_map[x]
+                    except:
+                        right_symbol = GLOBAL_TOOL_SYMBOLS["illegal"]
+                    if up_symbol != symbol:
+                        rectangle_sides += 1
+                # -R
+                if rectangle_sides == 4:
+                    global_map[i] = GLOBAL_MAP_SYMBOLS["land"]
+                elif rectangle_sides == 1 and t <= global_curve_corner_param:
+                    if random.randint(0, 50) == 1:
+                        global_map[i] = GLOBAL_MAP_SYMBOLS["land"]
+                elif rectangle_sides == 2 and t <= global_curve_corner_param:
+                    if random.randint(0, 3) != 1:
+                        global_map[i] = GLOBAL_MAP_SYMBOLS["land"]
+                elif rectangle_sides == 3 and t <= global_curve_corner_param:
+                    if random.randint(0, 5) != 1:
+                        global_map[i] = GLOBAL_MAP_SYMBOLS["land"]
+                else:
+                    pass
+
 # Function that replaces the outline of the rectangles with ascii art
 def outline_border(symbol):
     for i in global_map:
@@ -215,6 +281,7 @@ def build_forest():
     for x in points:
         global_box = random.choice(list(global_shapes.keys()))
         place_box(x, GLOBAL_MAP_SYMBOLS["forest"])
+    curve_corners(GLOBAL_MAP_SYMBOLS["forest"])
 
 def build_towns():
     global global_box
@@ -222,6 +289,7 @@ def build_towns():
     for x in points:
         global_box = random.choice(list(global_shapes.keys()))
         place_box(x, GLOBAL_MAP_SYMBOLS["town"])
+    curve_corners(GLOBAL_MAP_SYMBOLS["town"])
 
 def build_mountains():
     global global_box
@@ -229,6 +297,7 @@ def build_mountains():
     for x in points:
         global_box = random.choice(list(global_shapes.keys()))
         place_box(x, GLOBAL_MAP_SYMBOLS["mountain"])
+    curve_corners(GLOBAL_MAP_SYMBOLS["mountain"])
 
 def build_mineral():
     global global_box
@@ -236,6 +305,7 @@ def build_mineral():
     for x in points:
         global_box = random.choice(list(global_shapes.keys()))
         place_box(x, GLOBAL_MAP_SYMBOLS["gold"])
+    curve_corners(GLOBAL_MAP_SYMBOLS["gold"])
 
 # Main loop
 while True:
