@@ -45,7 +45,7 @@ def initialize_map():
     global_map_size = global_height * global_width
     for x in range(global_map_size):
         global_map[x] = GLOBAL_MAP_SYMBOLS["land"]
-    global_border = [x for x in range(global_map_size) if (x // global_width in (0, global_height - 1)) or (x % global_width == 0) or ((x + 1) % global_height == 0)]
+    global_border = [x for x in range(global_map_size) if (x // global_width in (0, global_height - 1)) or (x % global_width == 0) or ((x + 1) % global_width == 0)]
     global_left_border = [x for x in range(global_map_size) if (x % global_width == 0)]
     global_right_border = [x for x in range(global_map_size) if ((x + 0) % global_width == 0)]
 
@@ -102,11 +102,13 @@ def design_locations(type):
     local_i = 0
     if type == "river":
         for local_i in range(6):
-            global_point_a = random.choice(global_border)
-            global_point_b = random.choice(global_border)
-            global_points.append(global_point_a)
-            global_points.append(global_point_b)
-            pick_locations(global_point_a, global_point_b)
+            point_a = random.choice(global_border)
+            point_b = random.choice(global_border)
+            print(point_a // global_width, point_a % global_width)
+            print(point_b // global_width, point_b % global_width)
+            global_points.append(point_a)
+            global_points.append(point_b)
+            pick_locations(point_a, point_b)
         return global_points
     else:
         return None
