@@ -4,11 +4,11 @@ import random
 import os
 
 # - Lists of rectangles
-shapes1 = {
-    1:{"x": 3, "y": 3},
+GLOBAL_SHAPES_1 = {
+    1:{"x": 5, "y": 5},
 }
 
-symbols = {
+GLOBAL_MAP_SYMBOLS = {
     "land": "^",
     "forest": "*",
     "lake": "_",
@@ -18,76 +18,51 @@ symbols = {
     "mountain" : "M",
 }
 
+GLOBAL_TOOL_SYMBOLS = {
+    "illegal": "?",
+}
+
 # Function that creates the basic map, defines stuff like size, legend, positions on left/right side, ect
-def Start():
-    global MAP
-    global stuff
-    global PIL
-    global Legend
-    global shapes
-    global l
-    global a
-    global b
-    global A
-    global c
-    global LS
-    global RS
-    global p
-    stuff = ["*", "@", "!", ".", "+", "%", "&", "$", "#"]
-    PIL = []
-    MAP = {}
-    shapes = shapes1
-    l = 15
-    c = 3
+def initialize_map():
+    global global_map
+    global global_shapes
+    global global_height
+    global global_width
+    global global_map_size
+    global global_left_border
+    global global_right_border
+    global global_border
+    global global_input_area_height
+    global global_info_bar_width
+
+    global_map = {}
+    global_shapes = GLOBAL_SHAPES_1
+    global_input_area_height = 3
+    global_info_bar_width = 25
     size = os.get_terminal_size()
-    a = size.lines - 3
-    b = size.columns - 25
-    p = "T"
-    A = a*b
-    MAP = {}
-    for x in range(A):
-        MAP[x] = symbols["land"]
-    RS = [b]
-    LS = [0]
-    i = 0
-    y = 0
-    while i != a:
-        y += b
-        LS.append(y)
-        i += 1
-    i = 0
-    y = 0
-    while i != a:
-        y += b
-        RS.append(y)
-        i += 1
+    global_height = size.lines - global_input_area_height
+    global_width = size.columns - global_info_bar_width
+    global_map_size = global_height * global_width
+    for x in range(global_map_size):
+        global_map[x] = GLOBAL_MAP_SYMBOLS["land"]
+    global_border = [x for x in range(global_map_size) if (x // global_width in (0, global_height - 1)) or (x % global_width == 0) or ((x + 1) % global_height == 0)]
+    global_left_border = [x for x in range(global_map_size) if (x % global_width == 0)]
+    global_right_border = [x for x in range(global_map_size) if ((x + 0) % global_width == 0)]
 
 # Functions that name stuff
-def Namer():
+def random_name():
     FP = random.choice(["东","南","西","北", "前", "后", "江"])
     SP = random.choice(["秦","楚","齐","燕", "赵", "魏", "韩", "汉", "吴", "越", "宋", "晋", "唐", "明", "元"])
     return FP + SP
 
-def Hnamer():
-    FP = random.choice(["Mikker","Wimmly","Jarmit", "FiFyFo", "Peeter", "Nipnoe", "Padfot", "??????"])
-    SP = random.choice(["Bold  |","Stong |","Fast  |","Large |", "Small |", "Fat   |", "Stuped|", "Smart |", "Fine  |"])
-    return FP + " the " + SP
-
-def Dnamer():
-    return random.choice(["Scar             |","Kainto           |","Flea             |", "Botron           |", "Frot             |", "Clotenomen       |", "Fimotrin         |", "Death            |"])
-
 # Function that prints the map to the console
-def PrintM():
-    global a
-    global b
-    global MAP
-    global Legend
+def print_map():
     c = 0
     x = 0
     i = 0
-    for i in range(a):
-        for x in range(b):
-            print(MAP[c], end = "")
+    for i in range(global_height):
+        for x in range(global_width):
+            print(global_map[c], end = "")
             x += 1
             c += 1
         try:
@@ -98,191 +73,132 @@ def PrintM():
         i += 1
 
 # Function that places Box on x
-def PlaceB(i):
-    global Box
-    global a
-    global b
-    global MAP
-    y = 0
-    x = 0
-    while y != shapes[Box]["y"]:
-        while x != shapes[Box]["x"]:
-            MAP[i] = "#"
-            i +=1
-            x += 1
-            if i%b == 0:
-                break
-        i += (b - shapes[Box]["x"])
-        y += 1
-        x = 0
-        if i >= A:
-            break
+def place_box(point, symbol):
+    box = [x for x in range(global_map_size) if ((0 <= (x // global_width) - (point // global_width) < global_shapes[global_box]["y"]) and (0 <= (x % global_width) - (point % global_width) < global_shapes[global_box]["x"]))]
+    for x in box:
+        global_map[x] = symbol
 
+def pick_locations(begin, end):
+   local_begin_row = begin // global_width
+   local_begin_column = begin - local_begin_row * global_width
+   local_end_row = end // global_width
+   local_end_column = end - local_end_row * global_width
 
-def PickLocations(begin, end):
-   global Points
-   begin_row = int(begin/b) 
-   begin_column = begin - begin_row * b
-   end_row = int(end/b)
-   end_column = end - end_row * b
-
-   mid_row = random.randint(begin_row, end_row) 
-   mid_column = random.randint(begin_column, end_column)
-   mid = mid_row * b + mid_column
-   if ((mid_row == begin_row) and (mid_column == begin_column)):
+   local_mid_row = random.randint(min(local_begin_row, local_end_row), max(local_begin_row, local_end_row))
+   local_mid_column = random.randint(min(local_begin_column, local_end_column), max(local_begin_column, local_end_column))
+   if ((local_mid_row == min(local_begin_row, local_end_row)) and (local_mid_column == min(local_begin_column, local_end_column))):
        return
    else:
-       if not mid in Points:
-           Points.append(mid)
-       PickLocations(begin, mid)
-       PickLocations(mid, end)
+       local_mid = local_mid_row * global_width + local_mid_column
+       if not local_mid in global_points:
+           global_points.append(local_mid)
+       pick_locations(begin, local_mid)
+       pick_locations(local_mid, end)
 
 # Function that design which locations to place box
-def DesignLocations():
-    global A
-    global a
-    global b
-    global Points
-    Points = []
-    Points.append(0)
-    Points.append(A - 1)
-    PickLocations(0, A - 1)
-    print(len(Points))
-    for i in Points:
-        AddB(i)
-
-# Function that randomly picks a rectangle(box) and place on location i
-def AddB(i):
-    global Box
-    Box = random.choice(list(shapes.keys()))
-    PlaceB(i)
-    return None
+def design_locations(type):
+    global global_points
+    global_points = []
+    local_i = 0
+    if type == "river":
+        for local_i in range(6):
+            global_point_a = random.choice(global_border)
+            global_point_b = random.choice(global_border)
+            global_points.append(global_point_a)
+            global_points.append(global_point_b)
+            pick_locations(global_point_a, global_point_b)
+        return global_points
+    else:
+        return None
 
 # Function that replaces the outline of the rectangles with ascii art
-def Outline():
-    global MAP
-    global b
-    global LS
-    global RS
-    for i in MAP:
-        if MAP[i] == "#":
-            Sides = {"U": 0, "D": 0, "L": 0, "R": 0}
+def outline_border(symbol):
+    for i in global_map:
+        if global_map[i] == symbol:
+            rectangle_sides = {"U": 0, "D": 0, "L": 0, "R": 0}
             # - U
-            x = i - b
+            x = i - global_width
             try:
-                a = MAP[x]
+                up_symbol = global_map[x]
             except:
-                a = " "
-            if a == symbols["land"]:
-                Sides["U"] = 1
+                up_symbol = GLOBAL_TOOL_SYMBOLS["illegal"]
+            if up_symbol == GLOBAL_MAP_SYMBOLS["land"]:
+                rectangle_sides["U"] = 1
             # - U
             # - D
-            x = i + b
+            x = i + global_width
             try:
-                a = MAP[x]
+                down_symbol = global_map[x]
             except:
-                a = " "
-            if a == symbols["land"]:
-                Sides["D"] = 1
+                down_symbol = GLOBAL_TOOL_SYMBOLS["illegal"]
+            if down_symbol == GLOBAL_MAP_SYMBOLS["land"]:
+                rectangle_sides["D"] = 1
             # - D
             # - L
-            if i in LS:
-                Sides["L"] = 0
+            if i in global_left_border:
+                rectangle_sides["L"] = 0
             else:
                 x = i - 1
                 try:
-                    a = MAP[x]
+                    left_symbol = global_map[x]
                 except:
-                    a = " "
-                if a == symbols["land"]:
-                    Sides["L"] = 1
+                    left_symbol = GLOBAL_TOOL_SYMBOLS["illegal"]
+                if left_symbol == GLOBAL_MAP_SYMBOLS["land"]:
+                    rectangle_sides["L"] = 1
             # - L
             # - R
-            if i in RS:
-                Sides["R"] = 0
+            if i + 1 in global_right_border:
+                rectangle_sides["R"] = 0
             else:
                 x = i + 1
                 try:
-                    a = MAP[x]
+                    right_symbol = global_map[x]
                 except:
-                    a = " "
-                if a == symbols["land"]:
-                    Sides["R"] = 1
+                    right_symbol = GLOBAL_TOOL_SYMBOLS["illegal"]
+                if right_symbol == GLOBAL_MAP_SYMBOLS["land"]:
+                    rectangle_sides["R"] = 1
             # - R
-            if Sides["U"] == 1 and Sides["D"] == 1 and Sides["R"] == 1:
-                MAP[i] = ">"  
-            elif Sides["U"] == 1 and Sides["D"] == 1 and Sides["L"] == 1:   
-                MAP[i] = "<"
-            elif Sides["U"] == 1 and Sides["R"] == 1 and Sides["L"] == 1:   
-                MAP[i] = "^"
-            elif Sides["R"] == 1 and Sides["D"] == 1 and Sides["L"] == 1:   
-                MAP[i] = "v"
-            elif (Sides["U"] == 1 and Sides["L"] == 1) or (Sides["D"] == 1 and Sides["R"] == 1):
-                MAP[i] = "/"
-            elif (Sides["U"] == 1 and Sides["R"] == 1) or (Sides["D"] == 1 and Sides["L"] == 1):
-                MAP[i] = u"\u005C"
-            elif Sides["U"] == 1:
-                MAP[i] = u"\u203E"
-            elif Sides["D"] == 1:
-                MAP[i] = "_"
-            elif Sides["L"] == 1 or Sides["R"] == 1:
-                MAP[i] = "|"
+            if rectangle_sides["U"] == 1 and rectangle_sides["D"] == 1 and rectangle_sides["R"] == 1:
+                global_map[i] = ">"  
+            elif rectangle_sides["U"] == 1 and rectangle_sides["D"] == 1 and rectangle_sides["L"] == 1:   
+                global_map[i] = "<"
+            elif rectangle_sides["U"] == 1 and rectangle_sides["R"] == 1 and rectangle_sides["L"] == 1:   
+                global_map[i] = "^"
+            elif rectangle_sides["R"] == 1 and rectangle_sides["D"] == 1 and rectangle_sides["L"] == 1:   
+                global_map[i] = "v"
+            elif (rectangle_sides["U"] == 1 and rectangle_sides["L"] == 1) or (rectangle_sides["D"] == 1 and rectangle_sides["R"] == 1):
+                global_map[i] = "/"
+            elif (rectangle_sides["U"] == 1 and rectangle_sides["R"] == 1) or (rectangle_sides["D"] == 1 and rectangle_sides["L"] == 1):
+                global_map[i] = u"\u005C"
+            elif rectangle_sides["U"] == 1:
+                global_map[i] = u"\u203E"
+            elif rectangle_sides["D"] == 1:
+                global_map[i] = "_"
+            elif rectangle_sides["L"] == 1 or rectangle_sides["R"] == 1:
+                global_map[i] = "|"
             else:
                 pass
 
-# Function that clears out overything but the sea and outline
-def Clear():
-    global MAP
-    for i in MAP:
-        if MAP[i] == "#":
-            MAP[i] = symbols["river"]
+def build_river():
+    global global_box
+    points = design_locations("river")
+    for x in points:
+        global_box = random.choice(list(global_shapes.keys()))
+        place_box(x, GLOBAL_MAP_SYMBOLS["river"])
+    outline_border(GLOBAL_MAP_SYMBOLS["river"])
 
-# Function that adds random stuff to the empty parts of the map
-def AddStuff():
-    global MAP
-    global PIL
-    global stuff
-    global p
-    if p == "T":
-        for i in MAP:
-            if MAP[i] == " ":
-                if random.randint(0, 25) == 1:
-                    MAP[i] = random.choice(stuff)
-                    if MAP[i] not in PIL:
-                        PIL.append(MAP[i])
-                    if MAP[i] == "@" or MAP[i] == "&" or MAP[i] == "+" or MAP[i] == "%" or MAP[i] == "#":
-                        stuff.remove(MAP[i])
+#def BuildSea():
+#
+#
+#def BuildTowns():
+#
+#
+#def BuildMountains():
+#
+#
+#def BuildMineral():
 
-# Function that creats the Legend
-def LegendC():
-    global PIL
-    global Legend
-    global MAP
-    global b
-    Name = Namer()
-    Hname = Hnamer()
-    Dname = Dnamer()
-    Meaning = {
-    "^": "Land             |",
-    "*": "Forest           |",
-    "_": "Lake             |",
-    " ": "River            |",
-    "!": "City             |",
-    "$": "Gold             |",
-    "&": Dname,
-    "@": Hname,
-    "M": "Mountain         |",
-    }
-    Legend = {
-        0: " +----------------------+",
-        1: " |        " + Name + "        |",
-        2: " +----------------------+"
-    }
-    n = 4
-    for i in Meaning:
-        Legend[n] = " | " + i + " = " + Meaning[i]
-        n += 1
-    Legend[a - 1] = " +----------------------+"
+
 
 # Main loop
 while True:
@@ -290,12 +206,12 @@ while True:
     cmd = input(">")
     while cmd != "1":
         cmd = input(">")
-    Start()
-    DesignLocations()
+    initialize_map()
+    build_river()
+    #BuildTowns()
+    #BuildMountains()
+    #BuildMineral()
+    #BuildSea()
     print("")
-    Outline()
-    Clear()
-    AddStuff()
-    LegendC()
-    PrintM()
+    print_map()
     print("")
