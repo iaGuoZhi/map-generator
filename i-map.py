@@ -1,11 +1,35 @@
-# - i-map
+#  global_map[i] ==  h- i-map
 
 import random
 import os
 
 # - Lists of rectangles
-GLOBAL_SHAPES_1 = {
-    1:{"x": 4, "y": 4},
+RIVER_BOX_SHAPES_1 = {
+    1:{"x": 5, "y": 5},
+    2:{"x": 4, "y": 5},
+    3:{"x": 4, "y": 4},
+    4:{"x": 5, "y": 6},
+}
+
+TOWN_BOX_SHAPES_1 = {
+    1:{"x": 6, "y": 5},
+    2:{"x": 4, "y": 5},
+    3:{"x": 4, "y": 4},
+    4:{"x": 5, "y": 6},
+}
+
+MOUNTAIN_BOX_SHAPES_1 = {
+    1:{"x": 5, "y": 5},
+    2:{"x": 4, "y": 5},
+    3:{"x": 8, "y": 4},
+    4:{"x": 5, "y": 6},
+}
+
+MINERAL_BOX_SHAPES_1 = {
+    1:{"x": 2, "y": 5},
+    2:{"x": 3, "y": 5},
+    3:{"x": 4, "y": 4},
+    4:{"x": 5, "y": 6},
 }
 
 GLOBAL_MAP_SYMBOLS = {
@@ -37,7 +61,6 @@ def initialize_map():
     global global_curve_corner_param
 
     global_map = {}
-    global_shapes = GLOBAL_SHAPES_1
     global_input_area_height = 3
     global_info_bar_width = 25
     global_curve_corner_param = 4
@@ -113,9 +136,10 @@ def design_locations(geo_type):
             pick_locations(point_a, point_b)
         return global_points
     elif geo_type == "forest":
-        for local_i in range(20):
-            point_a = random.randint(0, global_map_size - 1)
-            global_points.append(point_a)
+        for local_i in global_map:
+            if global_map[local_i] == GLOBAL_MAP_SYMBOLS["land"]:
+                if random.randint(0, 5) == 1:
+                    global_points.append(local_i)
         return global_points
     elif geo_type == "town":
         for local_i in range(20):
@@ -269,6 +293,8 @@ def outline_border(symbol):
 
 def build_river():
     global global_box
+    global global_shapes
+    global_shapes = RIVER_BOX_SHAPES_1
     points = design_locations("river")
     for x in points:
         global_box = random.choice(list(global_shapes.keys()))
@@ -279,12 +305,12 @@ def build_forest():
     global global_box
     points = design_locations("forest")
     for x in points:
-        global_box = random.choice(list(global_shapes.keys()))
-        place_box(x, GLOBAL_MAP_SYMBOLS["forest"])
-    curve_corners(GLOBAL_MAP_SYMBOLS["forest"])
+        global_map[x] = GLOBAL_MAP_SYMBOLS["forest"]
 
 def build_towns():
     global global_box
+    global global_shapes
+    global_shapes = TOWN_BOX_SHAPES_1
     points = design_locations("town")
     for x in points:
         global_box = random.choice(list(global_shapes.keys()))
@@ -293,6 +319,8 @@ def build_towns():
 
 def build_mountains():
     global global_box
+    global global_shapes
+    global_shapes = MOUNTAIN_BOX_SHAPES_1
     points = design_locations("mountain")
     for x in points:
         global_box = random.choice(list(global_shapes.keys()))
@@ -301,6 +329,8 @@ def build_mountains():
 
 def build_mineral():
     global global_box
+    global global_shapes
+    global_shapes = MINERAL_BOX_SHAPES_1
     points = design_locations("gold")
     for x in points:
         global_box = random.choice(list(global_shapes.keys()))
@@ -315,10 +345,10 @@ while True:
         cmd = input(">")
     initialize_map()
     build_river()
-    build_forest()
     build_towns()
     build_mountains()
     build_mineral()
+    build_forest()
     print("")
     print_map()
     print("")
