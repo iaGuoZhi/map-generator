@@ -125,6 +125,9 @@ def pick_locations(begin, end):
 
    if min(local_begin_row, local_end_row) + 1 >= max(local_begin_row, local_end_row) and min(local_begin_column, local_end_column) +1 >= max(local_begin_column, local_end_column):
        return
+   # Randomly separate rivers
+   if random.randint(0, 30) == 1:
+       return
 
    local_mid_row = random.randint(min(local_begin_row, local_end_row), max(local_begin_row, local_end_row))
    local_mid_column = random.randint(min(local_begin_column, local_end_column), max(local_begin_column, local_end_column))
