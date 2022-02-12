@@ -12,23 +12,23 @@ RIVER_BOX_SHAPES_1 = {
 }
 
 TOWN_BOX_SHAPES_1 = {
-    1:{"x": 6, "y": 5},
-    2:{"x": 4, "y": 5},
-    3:{"x": 4, "y": 4},
-    4:{"x": 5, "y": 6},
+    1:{"x": 6, "y": 7},
+    2:{"x": 7, "y": 5},
+    3:{"x": 6, "y": 8},
+    4:{"x": 10, "y": 6},
 }
 
 MOUNTAIN_BOX_SHAPES_1 = {
     1:{"x": 5, "y": 5},
-    2:{"x": 4, "y": 5},
-    3:{"x": 8, "y": 4},
+    2:{"x": 4, "y": 7},
+    3:{"x": 8, "y": 9},
     4:{"x": 5, "y": 6},
 }
 
 MINERAL_BOX_SHAPES_1 = {
-    1:{"x": 2, "y": 5},
+    1:{"x": 7, "y": 5},
     2:{"x": 3, "y": 5},
-    3:{"x": 4, "y": 4},
+    3:{"x": 9, "y": 4},
     4:{"x": 5, "y": 6},
 }
 
@@ -37,8 +37,8 @@ GLOBAL_MAP_SYMBOLS = {
     "forest": "*",
     "lake": "_",
     "river": " ",
-    "town": "!",
-    "gold" : "@",
+    "town": "P",
+    "gold" : "$",
     "mountain" : "M",
 }
 
@@ -63,7 +63,7 @@ def initialize_map():
     global_map = {}
     global_input_area_height = 3
     global_info_bar_width = 25
-    global_curve_corner_param = 4
+    global_curve_corner_param = 3
     size = os.get_terminal_size()
     global_height = size.lines - global_input_area_height
     global_width = size.columns - global_info_bar_width
@@ -101,7 +101,8 @@ def print_map():
 def place_box(point, symbol):
     box = [x for x in range(global_map_size) if ((0 <= (x // global_width) - (point // global_width) < global_shapes[global_box]["y"]) and (0 <= (x % global_width) - (point % global_width) < global_shapes[global_box]["x"]))]
     for x in box:
-        global_map[x] = symbol
+        if global_map[x] == GLOBAL_MAP_SYMBOLS["land"] or global_map[x] == GLOBAL_MAP_SYMBOLS["forest"]:
+            global_map[x] = symbol
 
 def pick_locations(begin, end):
    local_begin_row = begin // global_width
@@ -147,7 +148,7 @@ def design_locations(geo_type):
             global_points.append(point_a)
         return global_points
     elif geo_type == "mountain":
-        for local_i in range(5):
+        for local_i in range(10):
             point_a = random.randint(0, global_map_size - 1)
             global_points.append(point_a)
         return global_points
@@ -182,7 +183,7 @@ def curve_corners(symbol):
                     down_symbol = global_map[x]
                 except:
                     down_symbol = GLOBAL_TOOL_SYMBOLS["illegal"]
-                if up_symbol != symbol:
+                if down_symbol != symbol:
                     rectangle_sides += 1
                 # - D
                 # - L
@@ -194,7 +195,7 @@ def curve_corners(symbol):
                         left_symbol = global_map[x]
                     except:
                         left_symbol = GLOBAL_TOOL_SYMBOLS["illegal"]
-                    if up_symbol != symbol:
+                    if down_symbol != symbol:
                         rectangle_sides += 1
                 # - L
                 # - R
@@ -206,7 +207,7 @@ def curve_corners(symbol):
                         right_symbol = global_map[x]
                     except:
                         right_symbol = GLOBAL_TOOL_SYMBOLS["illegal"]
-                    if up_symbol != symbol:
+                    if down_symbol != symbol:
                         rectangle_sides += 1
                 # -R
                 if rectangle_sides == 4:
