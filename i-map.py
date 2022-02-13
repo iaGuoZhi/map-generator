@@ -57,6 +57,8 @@ MAP_PARAMS = {
     "mountain_number" : 20,
     # Determining gold number
     "gold_number" : 10,
+    # Determining iron number
+    "iron_number" : 18,
     # Determining degree of curving
     "curve_corner_param" : 5,
 }
@@ -69,6 +71,7 @@ GLOBAL_MAP_SYMBOLS = {
     "sea": " ",
     "town": "P",
     "gold" : "$",
+    "iron" : "&",
     "mountain" : "M",
 }
 
@@ -129,6 +132,7 @@ def get_symbol_meaning():
             "  = 水域".ljust(17),
             "M = 山脉".ljust(17),
             "$ = 金矿".ljust(17),
+            "& = 铁矿".ljust(17),
             "P = 城镇".ljust(17),
         ]
     elif global_map_language == "en":
@@ -138,6 +142,7 @@ def get_symbol_meaning():
             "  = Water".ljust(19),
             "M = Mountain".ljust(19),
             "$ = Gold".ljust(19),
+            "& = Iron".ljust(19),
             "P = Town".ljust(19),
         ]
     else:
@@ -150,6 +155,7 @@ def get_map_statistics():
     land_area_size = 0
     population = 0
     gold_reserves = 0
+    iron_reserves = 0
 
     for x in global_map:
         if global_map[x] == GLOBAL_MAP_SYMBOLS["water"]:
@@ -160,6 +166,8 @@ def get_map_statistics():
                 population += 1
             elif global_map[x] == GLOBAL_MAP_SYMBOLS["gold"]:
                 gold_reserves += 1
+            elif global_map[x] == GLOBAL_MAP_SYMBOLS["iron"]:
+                iron_reserves += 1
             else:
                 pass
         else:
@@ -171,6 +179,7 @@ def get_map_statistics():
             ("水域面积: %d" % water_area_size).ljust(15),
             ("人口数量: %d" % population).ljust(15),
             ("金矿储备: %d" % gold_reserves).ljust(15),
+            ("铁矿储备: %d" % iron_reserves).ljust(15),
         ]
     elif global_map_language == "en":
         symbol_meaning = [
@@ -178,6 +187,7 @@ def get_map_statistics():
             ("WATER AREA: %d" % water_area_size).ljust(19),
             ("POPULATION: %d" % population).ljust(19),
             ("GOLD RESERVES: %d" % gold_reserves).ljust(19),
+            ("IRON RESERVES: %d" % iron_reserves).ljust(19),
         ]
     else:
         symbol_meaning = []
@@ -296,7 +306,9 @@ def design_locations(geo_type):
                     if side_symbol == GLOBAL_MAP_SYMBOLS["river"] or side_symbol == GLOBAL_MAP_SYMBOLS["sea"]:
                         town_suitability += random.randint(30, 130)
                     elif side_symbol == GLOBAL_MAP_SYMBOLS["gold"]:
-                        town_suitability += random.randint(20, 150)
+                        town_suitability += random.randint(20, 160)
+                    elif side_symbol == GLOBAL_MAP_SYMBOLS["iron"]:
+                        town_suitability += random.randint(40, 130)
                     elif side_symbol == GLOBAL_MAP_SYMBOLS["mountain"]:
                         town_suitability += random.randint(20, 60)
                     else:
@@ -312,6 +324,11 @@ def design_locations(geo_type):
         return global_points
     elif geo_type == "gold":
         for local_i in range(MAP_PARAMS["gold_number"]):
+            point_a = random.randint(0, global_map_size - 1)
+            global_points.append(point_a)
+        return global_points
+    elif geo_type == "iron":
+        for local_i in range(MAP_PARAMS["iron_number"]):
             point_a = random.randint(0, global_map_size - 1)
             global_points.append(point_a)
         return global_points
@@ -507,6 +524,11 @@ def build_mineral():
         global_box = random.choice(list(global_shapes.keys()))
         place_box(x, GLOBAL_MAP_SYMBOLS["gold"])
     curve_corners(GLOBAL_MAP_SYMBOLS["gold"])
+    points = design_locations("iron")
+    for x in points:
+        global_box = random.choice(list(global_shapes.keys()))
+        place_box(x, GLOBAL_MAP_SYMBOLS["iron"])
+    curve_corners(GLOBAL_MAP_SYMBOLS["iron"])
 
 def user_input():
     print("Regenerate(1) Set map language(2)")
