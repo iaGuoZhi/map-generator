@@ -48,11 +48,13 @@ MAP_PARAMS = {
     # Determining sea number
     "side_sea_number" : 2,
     # Determining the odds of forest appearing
-    "forest_param" : 5,
+    "forest_param" : 6,
+    # Determining the odds of field appearing
+    "field_param" : 3,
     # Determining the scope of detecting town suitability 
     "town_scope_param" : 3,
     # Determining the odds of towns building 
-    "town_build_param" : 660,
+    "town_build_param" : 650,
     # Determining mountain number
     "mountain_number" : 20,
     # Determining gold number
@@ -65,10 +67,9 @@ MAP_PARAMS = {
 
 GLOBAL_MAP_SYMBOLS = {
     "land": "^",
+    "field": ".",
     "forest": "*",
     "water": " ",
-    "river": " ",
-    "sea": " ",
     "town": "P",
     "gold" : "$",
     "iron" : "&",
@@ -94,12 +95,10 @@ def initialize_map():
     global global_border
     global global_input_area_height
     global global_info_bar_width
-    global global_map_language
 
     global_map = {}
     global_input_area_height = 3
     global_info_bar_width = 25
-    global_map_language = "en"
     size = os.get_terminal_size()
     global_height = size.lines - global_input_area_height
     global_width = size.columns - global_info_bar_width
@@ -128,6 +127,7 @@ def get_symbol_meaning():
     if global_map_language == "cn":
         symbol_meaning = [
             "^ = 陆地".ljust(17),
+            ". = 耕地".ljust(17),
             "* = 森林".ljust(17),
             "  = 水域".ljust(17),
             "M = 山脉".ljust(17),
@@ -138,6 +138,7 @@ def get_symbol_meaning():
     elif global_map_language == "en":
         symbol_meaning = [
             "^ = Land".ljust(19),
+            ". = Field".ljust(19),
             "* = Forest".ljust(19),
             "  = Water".ljust(19),
             "M = Mountain".ljust(19),
@@ -240,7 +241,7 @@ def print_map():
 def place_box(point, symbol):
     box = [x for x in range(global_map_size) if ((0 <= (x // global_width) - (point // global_width) < global_shapes[global_box]["y"]) and (0 <= (x % global_width) - (point % global_width) < global_shapes[global_box]["x"]))]
     for x in box:
-        if global_map[x] == GLOBAL_MAP_SYMBOLS["land"] or global_map[x] == GLOBAL_MAP_SYMBOLS["forest"]:
+        if global_map[x] == GLOBAL_MAP_SYMBOLS["land"] or global_map[x] == GLOBAL_MAP_SYMBOLS["field"] or global_map[x] == GLOBAL_MAP_SYMBOLS["forest"]:
             global_map[x] = symbol
 
 def pick_locations(begin, end):
@@ -292,6 +293,12 @@ def design_locations(geo_type):
                 if random.randint(0, MAP_PARAMS["forest_param"]) == 1:
                     global_points.append(local_i)
         return global_points
+    elif geo_type == "field":
+        for local_i in global_map:
+            if global_map[local_i] == GLOBAL_MAP_SYMBOLS["land"]:
+                if random.randint(0, MAP_PARAMS["field_param"]) == 1:
+                    global_points.append(local_i)
+        return global_points
     # Town should built near water, mineral
     elif geo_type == "town":
         for local_i in global_map:
@@ -301,9 +308,9 @@ def design_locations(geo_type):
                     try:
                         side_symbol = global_map[local_i + y * global_width + x]
                     except:
-                        side_symbol = GLOBAL_MAP_SYMBOLS["sea"]
+                        side_symbol = GLOBAL_MAP_SYMBOLS["water"]
 
-                    if side_symbol == GLOBAL_MAP_SYMBOLS["river"] or side_symbol == GLOBAL_MAP_SYMBOLS["sea"]:
+                    if side_symbol == GLOBAL_MAP_SYMBOLS["water"]:
                         town_suitability += random.randint(30, 130)
                     elif side_symbol == GLOBAL_MAP_SYMBOLS["gold"]:
                         town_suitability += random.randint(20, 160)
@@ -311,6 +318,10 @@ def design_locations(geo_type):
                         town_suitability += random.randint(40, 130)
                     elif side_symbol == GLOBAL_MAP_SYMBOLS["mountain"]:
                         town_suitability += random.randint(20, 60)
+                    elif side_symbol == GLOBAL_MAP_SYMBOLS["forest"]:
+                        town_suitability += random.randint(20, 80)
+                    elif side_symbol == GLOBAL_MAP_SYMBOLS["field"]:
+                        town_suitability += random.randint(0, 120)
                     else:
                         town_suitability += random.randint(0, 100)
 
@@ -447,12 +458,12 @@ def outline_border(symbol):
                     rectangle_sides["R"] = 1
             # - R
             if rectangle_sides["U"] == 1 and rectangle_sides["D"] == 1 and rectangle_sides["R"] == 1:
-                global_map[i] = ">"  
-            elif rectangle_sides["U"] == 1 and rectangle_sides["D"] == 1 and rectangle_sides["L"] == 1:   
+                global_map[i] = ">"
+            elif rectangle_sides["U"] == 1 and rectangle_sides["D"] == 1 and rectangle_sides["L"] == 1:
                 global_map[i] = "<"
-            elif rectangle_sides["U"] == 1 and rectangle_sides["R"] == 1 and rectangle_sides["L"] == 1:   
+            elif rectangle_sides["U"] == 1 and rectangle_sides["R"] == 1 and rectangle_sides["L"] == 1:
                 global_map[i] = "^"
-            elif rectangle_sides["R"] == 1 and rectangle_sides["D"] == 1 and rectangle_sides["L"] == 1:   
+            elif rectangle_sides["R"] == 1 and rectangle_sides["D"] == 1 and rectangle_sides["L"] == 1:
                 global_map[i] = "v"
             elif (rectangle_sides["U"] == 1 and rectangle_sides["L"] == 1) or (rectangle_sides["D"] == 1 and rectangle_sides["R"] == 1):
                 global_map[i] = "/"
@@ -470,7 +481,7 @@ def outline_border(symbol):
 def build_water():
     build_sea()
     build_river()
-    outline_border(GLOBAL_MAP_SYMBOLS["river"])
+    outline_border(GLOBAL_MAP_SYMBOLS["water"])
 
 def build_river():
     global global_box
@@ -479,7 +490,7 @@ def build_river():
     points = design_locations("river")
     for x in points:
         global_box = random.choice(list(global_shapes.keys()))
-        place_box(x, GLOBAL_MAP_SYMBOLS["river"])
+        place_box(x, GLOBAL_MAP_SYMBOLS["water"])
 
 def build_sea():
     global global_box
@@ -488,13 +499,19 @@ def build_sea():
     points = design_locations("sea")
     for x in points:
         global_box = random.choice(list(global_shapes.keys()))
-        place_box(x, GLOBAL_MAP_SYMBOLS["sea"])
+        place_box(x, GLOBAL_MAP_SYMBOLS["water"])
 
 def build_forest():
     global global_box
     points = design_locations("forest")
     for x in points:
         global_map[x] = GLOBAL_MAP_SYMBOLS["forest"]
+
+def build_field():
+    global global_box
+    points = design_locations("field")
+    for x in points:
+        global_map[x] = GLOBAL_MAP_SYMBOLS["field"]
 
 def build_towns():
     global global_box
@@ -531,12 +548,15 @@ def build_mineral():
     curve_corners(GLOBAL_MAP_SYMBOLS["iron"])
 
 def user_input():
+    global global_map_language
+    global_map_language = "en"
     print("Regenerate(1) Set map language(2)")
     cmd = input(">")
     while cmd != "1":
         if cmd == "2":
             print("Input language: Chinese(cn), English(en)")
             language = input(">")
+            print(language)
             if language == "cn":
                 global_map_language = "cn"
             elif language == "en":
@@ -555,6 +575,7 @@ while True:
     build_mountains()
     build_mineral()
     build_forest()
+    build_field()
     build_towns()
     create_intro()
     print_map()
