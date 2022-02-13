@@ -3,16 +3,16 @@ import os
 
 # - Lists of rectangles
 SEA_BOX_SHAPES_1 = {
-    1:{"x": 5, "y": 5},
-    2:{"x": 7, "y": 4},
+    1:{"x": 8, "y": 15},
+    2:{"x": 12, "y": 9},
     3:{"x": 8, "y": 5},
-    4:{"x": 6, "y": 7},
+    4:{"x": 10, "y": 13},
     5:{"x": 5, "y": 9},
 }
 
 RIVER_BOX_SHAPES_1 = {
     1:{"x": 3, "y": 4},
-    2:{"x": 4, "y": 3},
+    2:{"x": 2, "y": 4},
     3:{"x": 4, "y": 2},
     4:{"x": 3, "y": 3},
 }
@@ -42,9 +42,9 @@ MINERAL_BOX_SHAPES_1 = {
 
 MAP_PARAMS = {
     # Determining the odds of rivers separating
-    "river_separate_param" : 30,
+    "river_separate_param" : 50,
     # Determining river number
-    "river_number" : 7,
+    "river_number" : 9,
     # Determining sea number
     "side_sea_number" : 2,
     # Determining the odds of forest appearing
@@ -96,7 +96,7 @@ def initialize_map():
     global_map = {}
     global_input_area_height = 3
     global_info_bar_width = 25
-    global_map_language = "cn"
+    global_map_language = "en"
     size = os.get_terminal_size()
     global_height = size.lines - global_input_area_height
     global_width = size.columns - global_info_bar_width
@@ -508,12 +508,26 @@ def build_mineral():
         place_box(x, GLOBAL_MAP_SYMBOLS["gold"])
     curve_corners(GLOBAL_MAP_SYMBOLS["gold"])
 
-# Main loop
-while True:
-    print("Regenerate(1)")
+def user_input():
+    print("Regenerate(1) Set map language(2)")
     cmd = input(">")
     while cmd != "1":
+        if cmd == "2":
+            print("Input language: Chinese(cn), English(en)")
+            language = input(">")
+            if language == "cn":
+                global_map_language = "cn"
+            elif language == "en":
+                global_map_language = "en"
+            else:
+                pass
+
+        print("Regenerate(1) Set map language(2)")
         cmd = input(">")
+
+# Main loop
+while True:
+    user_input()
     initialize_map()
     build_water()
     build_mountains()
