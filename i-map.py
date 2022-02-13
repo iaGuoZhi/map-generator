@@ -43,7 +43,7 @@ MINERAL_BOX_SHAPES_1 = {
 GLOBAL_MAP_SYMBOLS = {
     "land": "^",
     "forest": "*",
-    "lake": "_",
+    "water": " ",
     "river": " ",
     "sea": " ",
     "town": "P",
@@ -123,6 +123,41 @@ def get_symbol_meaning():
 
     return symbol_meaning
 
+def get_map_statistics():
+    water_area_size = 0
+    land_area_size = 0
+    population = 0
+    gold_reserves = 0
+
+    for x in global_map:
+        if global_map[x] == GLOBAL_MAP_SYMBOLS["water"]:
+            water_area_size += 1
+        elif global_map[x] != GLOBAL_MAP_SYMBOLS["water"]:
+            land_area_size += 1
+            if global_map[x] == GLOBAL_MAP_SYMBOLS["town"]:
+                population += 1
+            elif global_map[x] == GLOBAL_MAP_SYMBOLS["gold"]:
+                gold_reserves += 1
+            else:
+                pass
+        else:
+            pass
+
+    if global_map_language == "cn":
+        symbol_meaning = [
+            "陆地面积: %d" % land_area_size,
+            "水域面积: %d" % water_area_size,
+            "人口数量: %d" % population,
+            "金矿储备: %d" % gold_reserves,
+        ]
+    elif global_map_language == "en":
+        symbol_meaning = [
+        ]
+    else:
+        symbol_meaning = []
+
+    return symbol_meaning
+
 # Function that creats the map introduction
 def create_intro():
     global global_intro
@@ -133,7 +168,15 @@ def create_intro():
         2: " +----------------------+"
     }
     n = 4
+    # Print map statistics
+    map_statistics = get_map_statistics()
+    for i in map_statistics:
+        i = i.ljust(17)
+        global_intro[n] = " | " + i + "|"
+        n += 1
+
     # Print map symbol meaning
+    n += 1
     symbol_meaning = get_symbol_meaning()
     for i in symbol_meaning:
         global_intro[n] = " | " + i + " = " + symbol_meaning[i]
