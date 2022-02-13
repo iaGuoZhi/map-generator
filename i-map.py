@@ -91,9 +91,34 @@ def initialize_map():
 
 # Functions that name stuff
 def random_name():
-    FP = random.choice(["东","南","西","北", "前", "后", "江"])
-    SP = random.choice(["秦","楚","齐","燕", "赵", "魏", "韩", "汉", "吴", "越", "宋", "晋", "唐", "明", "元"])
+    FP = random.choice(["东","南","西","北", "前", "后"])
+    SP = random.choice(["秦","楚","齐","燕", "赵", "魏", "韩", "汉", "吴", "蜀", "越", "宋", "晋", "唐", "明", "元"])
     return FP + SP
+
+# Function that creats the map introduction
+def create_intro():
+    global global_intro
+    name = random_name()
+    symbol_meaning = {
+        "^": "Land             |",
+        "*": "Forest           |",
+        " ": "Water            |",
+        "M": "Mountain         |",
+        "$": "Gold             |",
+        "P": "Town             |",
+    }
+    global_intro = {
+        0: " +----------------------+",
+        1: " |         " + name + "         |",
+        2: " +----------------------+"
+    }
+    n = 4
+    # Print map symbol meaning
+    for i in symbol_meaning:
+        global_intro[n] = " | " + i + " = " + symbol_meaning[i]
+        n += 1
+
+    global_intro[global_height - 1] = " +----------------------+"
 
 # Function that prints the map to the console
 def print_map():
@@ -106,7 +131,7 @@ def print_map():
             x += 1
             c += 1
         try:
-            print(Legend[i])
+            print(global_intro[i])
         except:
             print(" |                      |")
         x = 1
@@ -188,7 +213,7 @@ def design_locations(geo_type):
                     else:
                         town_suitability += random.randint(0, 100)
 
-            if town_suitability >= 700:
+            if town_suitability >= 660:
                 global_points.append(local_i)
         return global_points
     elif geo_type == "mountain":
@@ -406,5 +431,6 @@ while True:
     build_mineral()
     build_forest()
     build_towns()
+    create_intro()
     print_map()
     print("")
