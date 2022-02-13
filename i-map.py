@@ -77,7 +77,7 @@ def initialize_map():
     global_input_area_height = 3
     global_info_bar_width = 25
     global_curve_corner_param = 5
-    global_map_language = "cn"
+    global_map_language = "en"
     size = os.get_terminal_size()
     global_height = size.lines - global_input_area_height
     global_width = size.columns - global_info_bar_width
@@ -97,27 +97,31 @@ def random_name():
         FP = random.choice(["东","南","西","北", "前", "后"])
         SP = random.choice(["秦","楚","齐","燕", "赵", "魏", "韩", "汉", "吴", "蜀", "越", "宋", "晋", "唐", "明", "元"])
         return FP + SP
+    elif global_map_language == "en":
+        FP = random.choice(["东","南","西","北", "前", "后"])
+        SP = random.choice(["秦","楚","齐","燕", "赵", "魏", "韩", "汉", "吴", "蜀", "越", "宋", "晋", "唐", "明", "元"])
+        return FP + SP
 
 # Function return symbol meaning according to current language
 def get_symbol_meaning():
     if global_map_language == "cn":
-        symbol_meaning = {
-            "^": "陆地             |",
-            "*": "森林             |",
-            " ": "水域             |",
-            "M": "山脉             |",
-            "$": "金矿             |",
-            "P": "城镇             |",
-        }
+        symbol_meaning = [
+            "^ = 陆地".ljust(17),
+            "* = 森林".ljust(17),
+            "  = 水域".ljust(17),
+            "M = 山脉".ljust(17),
+            "$ = 金矿".ljust(17),
+            "P = 城镇".ljust(17),
+        ]
     elif global_map_language == "en":
-        symbol_meaning = {
-            "^": "Land             |",
-            "*": "Forest           |",
-            " ": "Water            |",
-            "M": "Mountain         |",
-            "$": "Gold             |",
-            "P": "Town             |",
-        }
+        symbol_meaning = [
+            "^ = Land".ljust(19),
+            "* = Forest".ljust(19),
+            "  = Water".ljust(19),
+            "M = Mountain".ljust(19),
+            "$ = Gold".ljust(19),
+            "P = Town".ljust(19),
+        ]
     else:
         symbol_meaning = {}
 
@@ -145,13 +149,17 @@ def get_map_statistics():
 
     if global_map_language == "cn":
         symbol_meaning = [
-            "陆地面积: %d" % land_area_size,
-            "水域面积: %d" % water_area_size,
-            "人口数量: %d" % population,
-            "金矿储备: %d" % gold_reserves,
+            ("陆地面积: %d" % land_area_size).ljust(15),
+            ("水域面积: %d" % water_area_size).ljust(15),
+            ("人口数量: %d" % population).ljust(15),
+            ("金矿储备: %d" % gold_reserves).ljust(15),
         ]
     elif global_map_language == "en":
         symbol_meaning = [
+            ("LAND AREA: %d" % land_area_size).ljust(19),
+            ("WATER AREA: %d" % water_area_size).ljust(19),
+            ("POPULATION: %d" % population).ljust(19),
+            ("GOLD RESERVES: %d" % gold_reserves).ljust(19),
         ]
     else:
         symbol_meaning = []
@@ -163,26 +171,25 @@ def create_intro():
     global global_intro
     name = random_name()
     global_intro = {
-        0: " +----------------------+",
-        1: " |         " + name + "         |",
-        2: " +----------------------+"
+        0: "   +--------------------+",
+        1: "   |        " + name + "        |",
+        2: "   +--------------------+"
     }
     n = 4
     # Print map statistics
     map_statistics = get_map_statistics()
     for i in map_statistics:
-        i = i.ljust(17)
-        global_intro[n] = " | " + i + "|"
+        global_intro[n] = "   | " + i + "|"
         n += 1
 
     # Print map symbol meaning
     n += 1
     symbol_meaning = get_symbol_meaning()
     for i in symbol_meaning:
-        global_intro[n] = " | " + i + " = " + symbol_meaning[i]
+        global_intro[n] = "   | " + i + "|"
         n += 1
 
-    global_intro[global_height - 1] = " +----------------------+"
+    global_intro[global_height - 1] = "   +--------------------+"
 
 # Function that prints the map to the console
 def print_map():
@@ -197,7 +204,7 @@ def print_map():
         try:
             print(global_intro[i])
         except:
-            print(" |                      |")
+            print("   |                    |")
         x = 1
         i += 1
 
