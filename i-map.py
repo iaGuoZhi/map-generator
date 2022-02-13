@@ -71,11 +71,13 @@ def initialize_map():
     global global_input_area_height
     global global_info_bar_width
     global global_curve_corner_param
+    global global_map_language
 
     global_map = {}
     global_input_area_height = 3
     global_info_bar_width = 25
     global_curve_corner_param = 5
+    global_map_language = "cn"
     size = os.get_terminal_size()
     global_height = size.lines - global_input_area_height
     global_width = size.columns - global_info_bar_width
@@ -91,22 +93,40 @@ def initialize_map():
 
 # Functions that name stuff
 def random_name():
-    FP = random.choice(["东","南","西","北", "前", "后"])
-    SP = random.choice(["秦","楚","齐","燕", "赵", "魏", "韩", "汉", "吴", "蜀", "越", "宋", "晋", "唐", "明", "元"])
-    return FP + SP
+    if global_map_language == "cn":
+        FP = random.choice(["东","南","西","北", "前", "后"])
+        SP = random.choice(["秦","楚","齐","燕", "赵", "魏", "韩", "汉", "吴", "蜀", "越", "宋", "晋", "唐", "明", "元"])
+        return FP + SP
+
+# Function return symbol meaning according to current language
+def get_symbol_meaning():
+    if global_map_language == "cn":
+        symbol_meaning = {
+            "^": "陆地             |",
+            "*": "森林             |",
+            " ": "水域             |",
+            "M": "山脉             |",
+            "$": "金矿             |",
+            "P": "城镇             |",
+        }
+    elif global_map_language == "en":
+        symbol_meaning = {
+            "^": "Land             |",
+            "*": "Forest           |",
+            " ": "Water            |",
+            "M": "Mountain         |",
+            "$": "Gold             |",
+            "P": "Town             |",
+        }
+    else:
+        symbol_meaning = {}
+
+    return symbol_meaning
 
 # Function that creats the map introduction
 def create_intro():
     global global_intro
     name = random_name()
-    symbol_meaning = {
-        "^": "Land             |",
-        "*": "Forest           |",
-        " ": "Water            |",
-        "M": "Mountain         |",
-        "$": "Gold             |",
-        "P": "Town             |",
-    }
     global_intro = {
         0: " +----------------------+",
         1: " |         " + name + "         |",
@@ -114,6 +134,7 @@ def create_intro():
     }
     n = 4
     # Print map symbol meaning
+    symbol_meaning = get_symbol_meaning()
     for i in symbol_meaning:
         global_intro[n] = " | " + i + " = " + symbol_meaning[i]
         n += 1
