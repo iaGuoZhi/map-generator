@@ -11,8 +11,8 @@ SEA_BOX_SHAPES_1 = {
 }
 
 RIVER_BOX_SHAPES_1 = {
-    1:{"x": 3, "y": 4},
-    2:{"x": 2, "y": 4},
+    1:{"x": 3, "y": 2},
+    2:{"x": 2, "y": 2},
     3:{"x": 4, "y": 2},
     4:{"x": 3, "y": 3},
 }
@@ -30,7 +30,7 @@ MOUNTAIN_BOX_SHAPES_1 = {
     1:{"x": 5, "y": 5},
     2:{"x": 4, "y": 7},
     3:{"x": 8, "y": 9},
-    4:{"x": 5, "y": 6},
+    4:{"x": 24, "y": 5},
 }
 
 MINERAL_BOX_SHAPES_1 = {
@@ -44,7 +44,9 @@ MAP_PARAMS = {
     # Determining the odds of rivers separating
     "river_separate_param" : 50,
     # Determining river number
-    "river_number" : 9,
+    "river_number" : 10,
+    # Determining river number random factor
+    "river_number_random_param" : 3,
     # Determining sea number
     "side_sea_number" : 2,
     # Determining the odds of forest appearing
@@ -54,15 +56,17 @@ MAP_PARAMS = {
     # Determining the scope of detecting town suitability 
     "town_scope_param" : 1,
     # Determining the odds of towns building 
-    "town_build_param" : 680,
+    "town_build_param" : 666,
     # Determining mountain number
-    "mountain_number" : 20,
+    "mountain_number" : 25,
     # Determining gold number
     "gold_number" : 10,
     # Determining iron number
     "iron_number" : 18,
     # Determining degree of curving
     "curve_corner_param" : 5,
+    # Determining default language
+    "default_language" : "cn",
 }
 
 GLOBAL_MAP_SYMBOLS = {
@@ -279,7 +283,7 @@ def design_locations(geo_type):
     global_points = []
     local_i = 0
     if geo_type == "river":
-        for local_i in range(MAP_PARAMS["river_number"]):
+        for local_i in range(MAP_PARAMS["river_number"] + MAP_PARAMS["river_number_random_param"]):
             point_a = random.choice(global_border)
             point_b = random.choice(global_border)
             global_points.append(point_a)
@@ -562,7 +566,7 @@ def build_mineral():
 
 def user_input():
     global global_map_language
-    global_map_language = "en"
+    global_map_language = MAP_PARAMS["default_language"]
     print("Regenerate(1) Set map language(2)")
     cmd = input(">")
     while cmd != "1":
