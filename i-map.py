@@ -240,7 +240,16 @@ def print_map():
 
 # Function that places Box on x
 def place_box(point, symbol):
-    box = [x for x in range(global_map_size) if ((0 <= (x // global_width) - (point // global_width) < global_shapes[global_box]["y"]) and (0 <= (x % global_width) - (point % global_width) < global_shapes[global_box]["x"]))]
+    x = 0
+    y = 0
+    box = []
+    while y != global_shapes[global_box]["y"]:
+        while x != global_shapes[global_box]["x"]:
+            if 0 <= point + y * global_width +x < global_map_size:
+                box.append(point + y * global_width + x)
+            x += 1
+        y += 1
+        x = 0
     for x in box:
         if global_map[x] == GLOBAL_MAP_SYMBOLS["land"] or global_map[x] == GLOBAL_MAP_SYMBOLS["field"] or global_map[x] == GLOBAL_MAP_SYMBOLS["forest"]:
             global_map[x] = symbol
