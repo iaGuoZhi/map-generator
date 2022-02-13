@@ -42,7 +42,7 @@ MINERAL_BOX_SHAPES_1 = {
 
 MAP_PARAMS = {
     # Determining the odds of rivers separating
-    "river_separate_param" : 50,
+    "river_separate_param" : 30,
     # Determining river number
     "river_number" : 10,
     # Determining river number random factor
