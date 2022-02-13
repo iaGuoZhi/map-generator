@@ -94,13 +94,12 @@ def initialize_map():
 # Functions that name stuff
 def random_name():
     if global_map_language == "cn":
-        FP = random.choice(["东","南","西","北", "前", "后"])
-        SP = random.choice(["秦","楚","齐","燕", "赵", "魏", "韩", "汉", "吴", "蜀", "越", "宋", "晋", "唐", "明", "元"])
-        return FP + SP
+        fp = random.choice(["东","南","西","北", "前", "后"])
+        sp = random.choice(["秦","楚","齐","燕", "赵", "魏", "韩", "汉", "吴", "蜀", "越", "宋", "晋", "唐", "明", "元"])
+        return (fp + sp).center(16)
     elif global_map_language == "en":
-        FP = random.choice(["东","南","西","北", "前", "后"])
-        SP = random.choice(["秦","楚","齐","燕", "赵", "魏", "韩", "汉", "吴", "蜀", "越", "宋", "晋", "唐", "明", "元"])
-        return FP + SP
+        sp = random.choice(["Torrhen Stark","Ronnel Arryn","Harren Hoare","Loren I Lannister", "Mern IX Gardener", "Argilac Durrandon", "Meria Martell"])
+        return sp.center(18)
 
 # Function return symbol meaning according to current language
 def get_symbol_meaning():
@@ -172,7 +171,7 @@ def create_intro():
     name = random_name()
     global_intro = {
         0: "   +--------------------+",
-        1: "   |        " + name + "        |",
+        1: "   | " + name + " |",
         2: "   +--------------------+"
     }
     n = 4
