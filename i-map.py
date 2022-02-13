@@ -1,5 +1,7 @@
 import random
 import os
+import sys
+import time
 
 # - Lists of rectangles
 SEA_BOX_SHAPES_1 = {
@@ -99,6 +101,7 @@ def initialize_map():
     global global_border
     global global_input_area_height
     global global_info_bar_width
+    global global_name
 
     global_map = {}
     global_input_area_height = 3
@@ -115,6 +118,7 @@ def initialize_map():
     global_left_border = [x for x in range(global_map_size) if (x % global_width == 0)]
     global_right_border = [x for x in range(global_map_size) if ((x + 0) % global_width == 0)]
     global_border_group = [global_up_border, global_down_border, global_left_border, global_right_border]
+    global_name = random_name()
 
 # Functions that name stuff
 def random_name():
@@ -202,10 +206,9 @@ def get_map_statistics():
 # Function that creats the map introduction
 def create_intro():
     global global_intro
-    name = random_name()
     global_intro = {
         0: "   +--------------------+",
-        1: "   | " + name + " |",
+        1: "   | " + global_name + " |",
         2: "   +--------------------+"
     }
     n = 4
@@ -223,23 +226,6 @@ def create_intro():
         n += 1
 
     global_intro[global_height - 1] = "   +--------------------+"
-
-# Function that prints the map to the console
-def print_map():
-    c = 0
-    x = 0
-    i = 0
-    for i in range(global_height):
-        for x in range(global_width):
-            print(global_map[c], end = "")
-            x += 1
-            c += 1
-        try:
-            print(global_intro[i])
-        except:
-            print("   |                    |")
-        x = 1
-        i += 1
 
 # Function that places Box on x
 def place_box(point, symbol):
@@ -584,6 +570,32 @@ def user_input():
         print("Regenerate(1) Set map language(2)")
         cmd = input(">")
 
+# Function that prints the map to the console
+def print_map():
+    c = 0
+    x = 0
+    i = 0
+    for i in range(global_height):
+        for x in range(global_width):
+            print(global_map[c], end = "")
+            x += 1
+            c += 1
+        try:
+            print(global_intro[i])
+        except:
+            print("   |                    |")
+        x = 1
+        i += 1
+
+def save_map_to_file():
+    timestamp = time.strftime("%Y-%m-%dT%H:%M%SZ")
+    file_name = "output/" + global_name.strip() + "_" + timestamp + ".txt"
+    original_stdout = sys.stdout
+    with open(file_name, 'w') as output_file:
+        sys.stdout = output_file
+        print_map()
+        sys.stdout = original_stdout
+
 # Main loop
 while True:
     user_input()
@@ -596,4 +608,5 @@ while True:
     build_towns()
     create_intro()
     print_map()
+    save_map_to_file()
     print("")
