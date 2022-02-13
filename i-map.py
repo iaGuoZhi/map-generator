@@ -1,5 +1,6 @@
 import random
 import os
+import datetime
 
 # - Lists of rectangles
 SEA_BOX_SHAPES_1 = {
@@ -52,9 +53,9 @@ MAP_PARAMS = {
     # Determining the odds of field appearing
     "field_param" : 3,
     # Determining the scope of detecting town suitability 
-    "town_scope_param" : 3,
+    "town_scope_param" : 1,
     # Determining the odds of towns building 
-    "town_build_param" : 650,
+    "town_build_param" : 680,
     # Determining mountain number
     "mountain_number" : 20,
     # Determining gold number
@@ -303,10 +304,11 @@ def design_locations(geo_type):
     elif geo_type == "town":
         for local_i in global_map:
             town_suitability = 0
-            for x in range(MAP_PARAMS["town_scope_param"]):
-                for y in range(MAP_PARAMS["town_scope_param"]):
+            for y in range(0 - MAP_PARAMS["town_scope_param"], MAP_PARAMS["town_scope_param"] + 1):
+                for x in range(0 - MAP_PARAMS["town_scope_param"], MAP_PARAMS["town_scope_param"] + 1):
+                    side_point = local_i + y * global_width + x
                     try:
-                        side_symbol = global_map[local_i + y * global_width + x]
+                        side_symbol = global_map[side_point]
                     except:
                         side_symbol = GLOBAL_MAP_SYMBOLS["water"]
 
@@ -488,6 +490,8 @@ def build_river():
     global global_shapes
     global_shapes = RIVER_BOX_SHAPES_1
     points = design_locations("river")
+    points.sort()
+    print(len(points))
     for x in points:
         global_box = random.choice(list(global_shapes.keys()))
         place_box(x, GLOBAL_MAP_SYMBOLS["water"])
@@ -497,6 +501,7 @@ def build_sea():
     global global_shapes
     global_shapes = SEA_BOX_SHAPES_1
     points = design_locations("sea")
+    points.sort()
     for x in points:
         global_box = random.choice(list(global_shapes.keys()))
         place_box(x, GLOBAL_MAP_SYMBOLS["water"])
@@ -518,6 +523,8 @@ def build_towns():
     global global_shapes
     global_shapes = TOWN_BOX_SHAPES_1
     points = design_locations("town")
+    points.sort()
+    print(len(points))
     for x in points:
         global_box = random.choice(list(global_shapes.keys()))
         place_box(x, GLOBAL_MAP_SYMBOLS["town"])
@@ -570,13 +577,29 @@ def user_input():
 # Main loop
 while True:
     user_input()
+    ct = datetime.datetime.now()
+    print(ct)
     initialize_map()
+    ct = datetime.datetime.now()
+    print(ct)
     build_water()
+    ct = datetime.datetime.now()
+    print(ct)
     build_mountains()
+    ct = datetime.datetime.now()
+    print(ct)
     build_mineral()
+    ct = datetime.datetime.now()
+    print(ct)
     build_forest()
+    ct = datetime.datetime.now()
+    print(ct)
     build_field()
+    ct = datetime.datetime.now()
+    print(ct)
     build_towns()
+    ct = datetime.datetime.now()
+    print(ct)
     create_intro()
     print_map()
     print("")
