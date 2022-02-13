@@ -40,6 +40,27 @@ MINERAL_BOX_SHAPES_1 = {
     4:{"x": 5, "y": 6},
 }
 
+MAP_PARAMS = {
+    # Determining the odds of rivers separating
+    "river_separate_param" : 30,
+    # Determining river number
+    "river_number" : 7,
+    # Determining sea number
+    "side_sea_number" : 2,
+    # Determining the odds of forest appearing
+    "forest_param" : 5,
+    # Determining the scope of detecting town suitability 
+    "town_scope_param" : 3,
+    # Determining the odds of towns building 
+    "town_build_param" : 660,
+    # Determining mountain number
+    "mountain_number" : 20,
+    # Determining gold number
+    "gold_number" : 10,
+    # Determining degree of curving
+    "curve_corner_param" : 5,
+}
+
 GLOBAL_MAP_SYMBOLS = {
     "land": "^",
     "forest": "*",
@@ -70,14 +91,12 @@ def initialize_map():
     global global_border
     global global_input_area_height
     global global_info_bar_width
-    global global_curve_corner_param
     global global_map_language
 
     global_map = {}
     global_input_area_height = 3
     global_info_bar_width = 25
-    global_curve_corner_param = 5
-    global_map_language = "en"
+    global_map_language = "cn"
     size = os.get_terminal_size()
     global_height = size.lines - global_input_area_height
     global_width = size.columns - global_info_bar_width
@@ -223,7 +242,7 @@ def pick_locations(begin, end):
    if min(local_begin_row, local_end_row) + 1 >= max(local_begin_row, local_end_row) and min(local_begin_column, local_end_column) +1 >= max(local_begin_column, local_end_column):
        return
    # Randomly separate rivers
-   if random.randint(0, 30) == 1:
+   if random.randint(0, MAP_PARAMS["river_separate_param"]) == 1:
        return
 
    local_mid_row = random.randint(min(local_begin_row, local_end_row), max(local_begin_row, local_end_row))
@@ -240,7 +259,7 @@ def design_locations(geo_type):
     global_points = []
     local_i = 0
     if geo_type == "river":
-        for local_i in range(7):
+        for local_i in range(MAP_PARAMS["river_number"]):
             point_a = random.choice(global_border)
             point_b = random.choice(global_border)
             global_points.append(point_a)
@@ -248,7 +267,7 @@ def design_locations(geo_type):
             pick_locations(point_a, point_b)
         return global_points
     elif geo_type == "sea":
-        for local_i in range(2):
+        for local_i in range(MAP_PARAMS["side_sea_number"]):
             # Actually, only left and up border and build sea, as box is built towards right and down orientation
             for x in range(4):
                 point_a = random.choice(global_border_group[x])
@@ -260,15 +279,15 @@ def design_locations(geo_type):
     elif geo_type == "forest":
         for local_i in global_map:
             if global_map[local_i] == GLOBAL_MAP_SYMBOLS["land"]:
-                if random.randint(0, 5) == 1:
+                if random.randint(0, MAP_PARAMS["forest_param"]) == 1:
                     global_points.append(local_i)
         return global_points
     # Town should built near water, mineral
     elif geo_type == "town":
         for local_i in global_map:
             town_suitability = 0
-            for x in range(3):
-                for y in range(3):
+            for x in range(MAP_PARAMS["town_scope_param"]):
+                for y in range(MAP_PARAMS["town_scope_param"]):
                     try:
                         side_symbol = global_map[local_i + y * global_width + x]
                     except:
@@ -283,16 +302,16 @@ def design_locations(geo_type):
                     else:
                         town_suitability += random.randint(0, 100)
 
-            if town_suitability >= 660:
+            if town_suitability >= MAP_PARAMS["town_build_param"]:
                 global_points.append(local_i)
         return global_points
     elif geo_type == "mountain":
-        for local_i in range(20):
+        for local_i in range(MAP_PARAMS["mountain_number"]):
             point_a = random.randint(0, global_map_size - 1)
             global_points.append(point_a)
         return global_points
     elif geo_type == "gold":
-        for local_i in range(10):
+        for local_i in range(MAP_PARAMS["gold_number"]):
             point_a = random.randint(0, global_map_size - 1)
             global_points.append(point_a)
         return global_points
@@ -302,7 +321,7 @@ def design_locations(geo_type):
 # Function that smooths out long corners
 def curve_corners(symbol):
     t = 0
-    while t <= global_curve_corner_param:
+    while t <= MAP_PARAMS["curve_corner_param"]:
         t += 1
         for i in global_map:
             if  global_map[i] == symbol:
@@ -351,13 +370,13 @@ def curve_corners(symbol):
                 # -R
                 if rectangle_sides == 4:
                     global_map[i] = GLOBAL_MAP_SYMBOLS["land"]
-                elif rectangle_sides == 1 and t <= global_curve_corner_param:
+                elif rectangle_sides == 1 and t <= MAP_PARAMS["curve_corner_param"]:
                     if random.randint(0, 50) == 1:
                         global_map[i] = GLOBAL_MAP_SYMBOLS["land"]
-                elif rectangle_sides == 2 and t <= global_curve_corner_param:
+                elif rectangle_sides == 2 and t <= MAP_PARAMS["curve_corner_param"]:
                     if random.randint(0, 3) != 1:
                         global_map[i] = GLOBAL_MAP_SYMBOLS["land"]
-                elif rectangle_sides == 3 and t <= global_curve_corner_param:
+                elif rectangle_sides == 3 and t <= MAP_PARAMS["curve_corner_param"]:
                     if random.randint(0, 5) != 1:
                         global_map[i] = GLOBAL_MAP_SYMBOLS["land"]
                 else:
