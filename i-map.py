@@ -86,6 +86,9 @@ GLOBAL_TOOL_SYMBOLS = {
     "illegal": "?",
 }
 
+global global_map_language
+global_map_language = MAP_PARAMS["default_language"]
+
 # Function that creates the basic map, defines stuff like size, legend, positions on left/right side, ect
 def initialize_map():
     global global_map
@@ -552,7 +555,6 @@ def build_mineral():
 
 def user_input():
     global global_map_language
-    global_map_language = MAP_PARAMS["default_language"]
     print("Regenerate(1) Set map language(2)")
     cmd = input(">")
     while cmd != "1":
