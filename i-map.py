@@ -1,6 +1,5 @@
 import random
 import os
-import datetime
 
 # - Lists of rectangles
 SEA_BOX_SHAPES_1 = {
@@ -500,7 +499,6 @@ def build_river():
     global_shapes = RIVER_BOX_SHAPES_1
     points = design_locations("river")
     points.sort()
-    print(len(points))
     for x in points:
         global_box = random.choice(list(global_shapes.keys()))
         place_box(x, GLOBAL_MAP_SYMBOLS["water"])
@@ -533,7 +531,6 @@ def build_towns():
     global_shapes = TOWN_BOX_SHAPES_1
     points = design_locations("town")
     points.sort()
-    print(len(points))
     for x in points:
         global_box = random.choice(list(global_shapes.keys()))
         place_box(x, GLOBAL_MAP_SYMBOLS["town"])
@@ -586,29 +583,13 @@ def user_input():
 # Main loop
 while True:
     user_input()
-    ct = datetime.datetime.now()
-    print(ct)
     initialize_map()
-    ct = datetime.datetime.now()
-    print(ct)
     build_water()
-    ct = datetime.datetime.now()
-    print(ct)
     build_mountains()
-    ct = datetime.datetime.now()
-    print(ct)
     build_mineral()
-    ct = datetime.datetime.now()
-    print(ct)
     build_forest()
-    ct = datetime.datetime.now()
-    print(ct)
     build_field()
-    ct = datetime.datetime.now()
-    print(ct)
     build_towns()
-    ct = datetime.datetime.now()
-    print(ct)
     create_intro()
     print_map()
     print("")
