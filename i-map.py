@@ -10,12 +10,13 @@ MAP_PARAMS = {
     "side_sea_number" : 2,
     "forest_rarity" : 6,
     "field_rarity" : 3,
-    "mountain_rarity" : 25,
-    "gold_rarity" : 10,
-    "iron_rarity" : 18,
+    "mountain_rarity" : 50,
+    "gold_rarity" : 100,
+    "iron_rarity" : 50,
     "town_scope_param" : 1,
     "town_build_param" : 666,
-    "state_number" : 10,
+    "state_number" : 100,
+    "state_retry" : 3,
     "curve_corner_by_symbol_param" : 4,
     "curve_corner_by_color_param" : 6,
     "default_language" : "cn",
@@ -33,22 +34,26 @@ MAP_SYMBOLS = {
 }
 
 BOX_SIZE_LEVEL = {
-    "sea": 10,
+    "sea": 5,
     "river": 1,
     "town": 2,
-    "mountain": 8,
-    "mineral": 5,
-    "state": 40,
+    "mountain": 4,
+    "mineral": 3,
+    "state": 25,
 }
 
 MAP_COLORS = {
-    "blue": "\033[94m",
-    "green": "\033[92m",
-    "red": "\033[91m",
-    "yellow": "\033[93m",
+    "red": "\033[31m",
+    "green": "\033[32m",
+    "yellow": "\033[33m",
+    "blue": "\033[34m",
+    "magenta": "\033[35m",
+    "cyan": "\033[36m",
+    "light_red": "\033[91m",
+    "light_green": "\033[92m",
+    "light_yellow": "\033[93m",
+    "light_blue": "\033[94m",
     "purple": "\033[95m",
-    "cyan": "\033[96m",
-    "white": "\033[97m",
     "reset": "\033[0m",
 }
 
@@ -101,9 +106,8 @@ def initialize_map():
 # Functions that name stuff
 def random_name():
     if global_map_language == "cn":
-        fp = random.choice(["东","南","西","北", "前", "后"])
-        sp = random.choice(["秦","楚","齐","燕", "赵", "魏", "韩", "汉", "吴", "蜀", "越", "宋", "晋", "唐", "明", "元"])
-        return (fp + sp).center(16)
+        sp = random.choice(["春秋","战国","南北","五胡"])
+        return sp.center(16)
     elif global_map_language == "en":
         sp = random.choice(["Torrhen Stark","Ronnel Arryn","Harren Hoare","Loren I Lannister", "Mern IX Gardener", "Argilac Durrandon", "Meria Martell"])
         return sp.center(18)
@@ -206,7 +210,7 @@ def create_intro():
     global_intro[global_height - 1] = "   +--------------------+"
 
 def get_random_box(size_level):
-    x = 1; y = 1
+    x = int((size_level + 1) / 2); y = int((size_level + 1) / 2)
     for i in range(size_level):
         x += random.randint(0, 2)
         y += random.randint(0, 2)
@@ -232,9 +236,11 @@ def place_color(point, color):
     x = 0
     y = 0
     box = []
+    point = point - global_box["y"] / 2 * global_width - global_box["x"] / 2
     while y != global_box["y"]:
         while x != global_box["x"]:
             if 0 <= point + y * global_width +x < global_map_size:
+                # put point in the center
                 box.append(point + y * global_width + x)
             x += 1
         y += 1
@@ -294,15 +300,21 @@ def design_normal_locations(rarity):
                 global_points.append(local_i)
     return global_points
 
+def design_state_location():
+    global town_points
+    retry = 0
+    while retry < MAP_PARAMS["state_retry"]:
+        point = random.choice(town_points)
+        if global_color[point] == MAP_COLORS["reset"]:
+            return point
+        retry += 1
+    return random.choice(town_points)
+
 def design_state_locations():
     global global_points
     global_points = []
     for local_i in range(MAP_PARAMS["state_number"]):
-        while True:
-            point_a = random.randint(0, global_map_size - 1)
-            if global_map[point_a] == MAP_SYMBOLS["town"]:
-                global_points.append(point_a)
-                break
+        global_points.append(design_state_location())
     return global_points
 
 def design_town_locations():
@@ -586,13 +598,18 @@ def build_mineral():
 
 def build_towns():
     global global_box
+    global town_points
+    town_points = []
     points = design_town_locations()
     points.sort()
     for x in points:
         global_box = get_random_box(BOX_SIZE_LEVEL["town"])
         place_box(x, MAP_SYMBOLS["town"])
+    for x in global_map:
+        if global_map[x] == MAP_SYMBOLS["town"]:
+            town_points.append(x)
 
-def build_state():
+def build_states():
     global global_box
     points = design_state_locations()
     for x in points:
@@ -603,27 +620,17 @@ def build_state():
         if color != "reset":
             curve_corners_by_color(color)
 
-def user_input():
-    global global_map_language
-    print("Regenerate(1) Set map language(2)")
-    cmd = input(">")
-    while cmd != "1":
-        if cmd == "2":
-            print("Input language: Chinese(cn), English(en)")
-            language = input(">")
-            print(language)
-            if language == "cn":
-                global_map_language = "cn"
-            elif language == "en":
-                global_map_language = "en"
-            else:
-                pass
-
-        print("Regenerate(1) Set map language(2)")
-        cmd = input(">")
+def build_next_state():
+    global global_box
+    point = design_state_location()
+    global_box = get_random_box(BOX_SIZE_LEVEL["state"])
+    color = random.choice(list(MAP_COLORS.keys())[:len(MAP_COLORS) - 1])
+    place_color(point, color)
+    curve_corners_by_color(color)
 
 # Function that prints the map to the console
 def print_map():
+    create_intro()
     c = 0
     x = 0
     i = 0
@@ -638,6 +645,7 @@ def print_map():
             print("   |                    |")
         x = 1
         i += 1
+    print("")
 
 def save_map():
     timestamp = time.strftime("%Y-%m-%dT%H:%M%SZ")
@@ -648,9 +656,11 @@ def save_map():
         print_map()
         sys.stdout = original_stdout
 
-# Main loop
-while True:
-    user_input()
+def show_map():
+    print_map()
+    time.sleep(5)
+
+def build_all():
     initialize_map()
     build_water()
     build_mountains()
@@ -658,8 +668,42 @@ while True:
     build_forest()
     build_field()
     build_towns()
-    build_state()
-    create_intro()
+    build_states()
     print_map()
     save_map()
     print("")
+
+def build_by_step():
+    initialize_map()
+    build_water()
+    show_map()
+    build_mountains()
+    build_mineral()
+    build_forest()
+    build_field()
+    show_map()
+    build_towns()
+    show_map()
+    for i in range(MAP_PARAMS["state_number"]):
+        build_next_state()
+        show_map()
+    save_map()
+
+# Main loop
+while True:
+    print("New map(1) Next stage(2) Final world(3) Set map language(4)")
+    cmd = input(">")
+    if cmd == "1":
+        build_all()
+    if cmd == "2":
+        build_by_step()
+    if cmd == "3":
+        build_all()
+    if cmd == "4":
+        print("Input language: Chinese(cn), English(en)")
+        language = input(">")
+        print(language)
+        if language == "cn":
+            global_map_language = "cn"
+        elif language == "en":
+            global_map_language = "en"
