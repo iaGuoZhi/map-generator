@@ -691,15 +691,13 @@ def build_by_step():
 
 # Main loop
 while True:
-    print("New map(1) Next stage(2) Final world(3) Set map language(4)")
+    print("New map(1) In stages(2) Set map language(4)")
     cmd = input(">")
     if cmd == "1":
         build_all()
     if cmd == "2":
         build_by_step()
     if cmd == "3":
-        build_all()
-    if cmd == "4":
         print("Input language: Chinese(cn), English(en)")
         language = input(">")
         print(language)
