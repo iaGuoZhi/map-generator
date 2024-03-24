@@ -3,72 +3,25 @@ import os
 import sys
 import time
 
-# - Lists of rectangles
-SEA_BOX_SHAPES_1 = {
-    1:{"x": 8, "y": 15},
-    2:{"x": 12, "y": 9},
-    3:{"x": 8, "y": 5},
-    4:{"x": 10, "y": 13},
-    5:{"x": 5, "y": 9},
-}
-
-RIVER_BOX_SHAPES_1 = {
-    1:{"x": 3, "y": 2},
-    2:{"x": 2, "y": 2},
-    3:{"x": 4, "y": 2},
-    4:{"x": 3, "y": 3},
-}
-
-TOWN_BOX_SHAPES_1 = {
-    1:{"x": 3, "y": 3},
-    2:{"x": 4, "y": 4},
-    3:{"x": 2, "y": 2},
-    4:{"x": 1, "y": 2},
-    5:{"x": 2, "y": 2},
-    6:{"x": 1, "y": 2},
-}
-
-MOUNTAIN_BOX_SHAPES_1 = {
-    1:{"x": 5, "y": 5},
-    2:{"x": 4, "y": 7},
-    3:{"x": 8, "y": 9},
-    4:{"x": 24, "y": 5},
-}
-
-MINERAL_BOX_SHAPES_1 = {
-    1:{"x": 7, "y": 5},
-    2:{"x": 3, "y": 5},
-    3:{"x": 9, "y": 8},
-    4:{"x": 5, "y": 6},
-}
-
-STATE_BOX_SHAPES_1 = {
-    1:{"x": 15, "y": 5},
-    2:{"x": 9, "y": 7},
-    3:{"x": 8, "y": 24},
-    4:{"x": 24, "y": 5},
-    5:{"x": 7, "y": 15},
-    6:{"x": 24, "y": 15},
-}
-
 MAP_PARAMS = {
     "river_separate_param" : 30,
     "river_number" : 10,
     "river_number_random_param" : 3,
     "side_sea_number" : 2,
-    "forest_param" : 6,
-    "field_param" : 3,
+    "forest_rarity" : 6,
+    "field_rarity" : 3,
+    "mountain_rarity" : 25,
+    "gold_rarity" : 10,
+    "iron_rarity" : 18,
     "town_scope_param" : 1,
     "town_build_param" : 666,
-    "mountain_number" : 25,
-    "gold_number" : 10,
-    "iron_number" : 18,
-    "state_number" : 50,
-    "curve_corner_param" : 5,
+    "state_number" : 10,
+    "curve_corner_by_symbol_param" : 4,
+    "curve_corner_by_color_param" : 6,
     "default_language" : "cn",
 }
 
-GLOBAL_MAP_SYMBOLS = {
+MAP_SYMBOLS = {
     "land": "^",
     "field": ".",
     "forest": "*",
@@ -79,7 +32,16 @@ GLOBAL_MAP_SYMBOLS = {
     "mountain" : "M",
 }
 
-GLOBAL_MAP_COLORS = {
+BOX_SIZE_LEVEL = {
+    "sea": 10,
+    "river": 1,
+    "town": 2,
+    "mountain": 8,
+    "mineral": 5,
+    "state": 40,
+}
+
+MAP_COLORS = {
     "blue": "\033[94m",
     "green": "\033[92m",
     "red": "\033[91m",
@@ -90,7 +52,7 @@ GLOBAL_MAP_COLORS = {
     "reset": "\033[0m",
 }
 
-GLOBAL_TOOL_SYMBOLS = {
+TOOL_SYMBOLS = {
     "illegal": "?",
 }
 
@@ -101,6 +63,7 @@ global_map_language = MAP_PARAMS["default_language"]
 def initialize_map():
     global global_map
     global global_color
+    global globa_points
     global global_shapes
     global global_height
     global global_width
@@ -117,6 +80,7 @@ def initialize_map():
 
     global_map = {}
     global_color = {}
+    global_points = []
     global_input_area_height = 3
     global_info_bar_width = 25
     size = os.get_terminal_size()
@@ -124,8 +88,8 @@ def initialize_map():
     global_width = size.columns - global_info_bar_width
     global_map_size = global_height * global_width
     for x in range(global_map_size):
-        global_map[x] = GLOBAL_MAP_SYMBOLS["land"]
-        global_color[x] = GLOBAL_MAP_COLORS["reset"]
+        global_map[x] = MAP_SYMBOLS["land"]
+        global_color[x] = MAP_COLORS["reset"]
     global_border = [x for x in range(global_map_size) if (x // global_width in (0, global_height - 1)) or (x % global_width == 0) or ((x + 1) % global_width == 0)]
     global_up_border = [x for x in range(global_map_size) if (x // global_width == 0)]
     global_down_border = [x for x in range(global_map_size) if (x // global_width == global_height - 1)]
@@ -181,15 +145,15 @@ def get_map_statistics():
     iron_reserves = 0
 
     for x in global_map:
-        if global_map[x] == GLOBAL_MAP_SYMBOLS["water"]:
+        if global_map[x] == MAP_SYMBOLS["water"]:
             water_area_size += 1
-        elif global_map[x] != GLOBAL_MAP_SYMBOLS["water"]:
+        elif global_map[x] != MAP_SYMBOLS["water"]:
             land_area_size += 1
-            if global_map[x] == GLOBAL_MAP_SYMBOLS["town"]:
+            if global_map[x] == MAP_SYMBOLS["town"]:
                 population += 1
-            elif global_map[x] == GLOBAL_MAP_SYMBOLS["gold"]:
+            elif global_map[x] == MAP_SYMBOLS["gold"]:
                 gold_reserves += 1
-            elif global_map[x] == GLOBAL_MAP_SYMBOLS["iron"]:
+            elif global_map[x] == MAP_SYMBOLS["iron"]:
                 iron_reserves += 1
             else:
                 pass
@@ -241,35 +205,42 @@ def create_intro():
 
     global_intro[global_height - 1] = "   +--------------------+"
 
+def get_random_box(size_level):
+    x = 1; y = 1
+    for i in range(size_level):
+        x += random.randint(0, 2)
+        y += random.randint(0, 2)
+    return {"x": x, "y": y}
+
 # Function that places Box on x
 def place_box(point, symbol):
     x = 0
     y = 0
     box = []
-    while y != global_shapes[global_box]["y"]:
-        while x != global_shapes[global_box]["x"]:
+    while y != global_box["y"]:
+        while x != global_box["x"]:
             if 0 <= point + y * global_width +x < global_map_size:
                 box.append(point + y * global_width + x)
             x += 1
         y += 1
         x = 0
     for x in box:
-        if global_map[x] == GLOBAL_MAP_SYMBOLS["land"] or global_map[x] == GLOBAL_MAP_SYMBOLS["field"] or global_map[x] == GLOBAL_MAP_SYMBOLS["forest"]:
+        if global_map[x] == MAP_SYMBOLS["land"] or global_map[x] == MAP_SYMBOLS["field"] or global_map[x] == MAP_SYMBOLS["forest"]:
             global_map[x] = symbol
 
 def place_color(point, color):
     x = 0
     y = 0
     box = []
-    while y != global_shapes[global_box]["y"]:
-        while x != global_shapes[global_box]["x"]:
+    while y != global_box["y"]:
+        while x != global_box["x"]:
             if 0 <= point + y * global_width +x < global_map_size:
                 box.append(point + y * global_width + x)
             x += 1
         y += 1
         x = 0
     for x in box:
-        global_color[x] = GLOBAL_MAP_COLORS[color]
+        global_color[x] = MAP_COLORS[color]
 
 def pick_locations(begin, end):
    local_begin_row = begin // global_width
@@ -291,101 +262,84 @@ def pick_locations(begin, end):
    pick_locations(begin, local_mid)
    pick_locations(local_mid, end)
 
-# Function that design which locations to place box
-def design_locations(geo_type):
+def design_river_locations():
     global global_points
     global_points = []
-    local_i = 0
-    if geo_type == "river":
-        for local_i in range(MAP_PARAMS["river_number"] + MAP_PARAMS["river_number_random_param"]):
-            point_a = random.choice(global_border)
-            point_b = random.choice(global_border)
+    for local_i in range(MAP_PARAMS["river_number"] + MAP_PARAMS["river_number_random_param"]):
+        point_a = random.choice(global_border)
+        point_b = random.choice(global_border)
+        global_points.append(point_a)
+        global_points.append(point_b)
+        pick_locations(point_a, point_b)
+    return global_points
+
+def design_sea_locations():
+    global global_points
+    global_points = []
+    for local_i in range(MAP_PARAMS["side_sea_number"]):
+        for x in range(4):
+            point_a = random.choice(global_border_group[x])
+            point_b = random.choice(global_border_group[x])
             global_points.append(point_a)
             global_points.append(point_b)
             pick_locations(point_a, point_b)
-        return global_points
-    elif geo_type == "sea":
-        for local_i in range(MAP_PARAMS["side_sea_number"]):
-            # Actually, only left and up border and build sea, as box is built towards right and down orientation
-            for x in range(4):
-                point_a = random.choice(global_border_group[x])
-                point_b = random.choice(global_border_group[x])
-                global_points.append(point_a)
-                global_points.append(point_b)
-                pick_locations(point_a, point_b)
-        return global_points
-    elif geo_type == "forest":
-        for local_i in global_map:
-            if global_map[local_i] == GLOBAL_MAP_SYMBOLS["land"]:
-                if random.randint(0, MAP_PARAMS["forest_param"]) == 1:
-                    global_points.append(local_i)
-        return global_points
-    elif geo_type == "field":
-        for local_i in global_map:
-            if global_map[local_i] == GLOBAL_MAP_SYMBOLS["land"]:
-                if random.randint(0, MAP_PARAMS["field_param"]) == 1:
-                    global_points.append(local_i)
-        return global_points
-    # Town should built near water, mineral
-    elif geo_type == "town":
-        for local_i in global_map:
-            town_suitability = 0
-            for y in range(0 - MAP_PARAMS["town_scope_param"], MAP_PARAMS["town_scope_param"] + 1):
-                for x in range(0 - MAP_PARAMS["town_scope_param"], MAP_PARAMS["town_scope_param"] + 1):
-                    side_point = local_i + y * global_width + x
-                    try:
-                        side_symbol = global_map[side_point]
-                    except:
-                        side_symbol = GLOBAL_MAP_SYMBOLS["water"]
+    return global_points
 
-                    if side_symbol == GLOBAL_MAP_SYMBOLS["water"]:
-                        town_suitability += random.randint(30, 130)
-                    elif side_symbol == GLOBAL_MAP_SYMBOLS["gold"]:
-                        town_suitability += random.randint(20, 160)
-                    elif side_symbol == GLOBAL_MAP_SYMBOLS["iron"]:
-                        town_suitability += random.randint(40, 130)
-                    elif side_symbol == GLOBAL_MAP_SYMBOLS["mountain"]:
-                        town_suitability += random.randint(20, 60)
-                    elif side_symbol == GLOBAL_MAP_SYMBOLS["forest"]:
-                        town_suitability += random.randint(20, 80)
-                    elif side_symbol == GLOBAL_MAP_SYMBOLS["field"]:
-                        town_suitability += random.randint(0, 120)
-                    else:
-                        town_suitability += random.randint(0, 100)
-
-            if town_suitability >= MAP_PARAMS["town_build_param"]:
+def design_normal_locations(rarity):
+    global global_points
+    global_points = []
+    for local_i in global_map:
+        if global_map[local_i] == MAP_SYMBOLS["land"]:
+            if random.randint(0, rarity) == 1:
                 global_points.append(local_i)
-        return global_points
-    elif geo_type == "mountain":
-        for local_i in range(MAP_PARAMS["mountain_number"]):
+    return global_points
+
+def design_state_locations():
+    global global_points
+    global_points = []
+    for local_i in range(MAP_PARAMS["state_number"]):
+        while True:
             point_a = random.randint(0, global_map_size - 1)
-            global_points.append(point_a)
-        return global_points
-    elif geo_type == "gold":
-        for local_i in range(MAP_PARAMS["gold_number"]):
-            point_a = random.randint(0, global_map_size - 1)
-            global_points.append(point_a)
-        return global_points
-    elif geo_type == "iron":
-        for local_i in range(MAP_PARAMS["iron_number"]):
-            point_a = random.randint(0, global_map_size - 1)
-            global_points.append(point_a)
-        return global_points
-    elif geo_type == "state":
-        for local_i in range(MAP_PARAMS["state_number"]):
-            while True:
-                point_a = random.randint(0, global_map_size - 1)
-                if global_map[point_a] == GLOBAL_MAP_SYMBOLS["town"]:
-                    global_points.append(point_a)
-                    break
-        return global_points
-    else:
-        return None
+            if global_map[point_a] == MAP_SYMBOLS["town"]:
+                global_points.append(point_a)
+                break
+    return global_points
+
+def design_town_locations():
+    points = []
+    for local_i in global_map:
+        town_suitability = 0
+        for y in range(0 - MAP_PARAMS["town_scope_param"], MAP_PARAMS["town_scope_param"] + 1):
+            for x in range(0 - MAP_PARAMS["town_scope_param"], MAP_PARAMS["town_scope_param"] + 1):
+                side_point = local_i + y * global_width + x
+                try:
+                    side_symbol = global_map[side_point]
+                except:
+                    side_symbol = MAP_SYMBOLS["water"]
+
+                if side_symbol == MAP_SYMBOLS["water"]:
+                    town_suitability += random.randint(30, 130)
+                elif side_symbol == MAP_SYMBOLS["gold"]:
+                    town_suitability += random.randint(20, 160)
+                elif side_symbol == MAP_SYMBOLS["iron"]:
+                    town_suitability += random.randint(40, 130)
+                elif side_symbol == MAP_SYMBOLS["mountain"]:
+                    town_suitability += random.randint(20, 60)
+                elif side_symbol == MAP_SYMBOLS["forest"]:
+                    town_suitability += random.randint(20, 80)
+                elif side_symbol == MAP_SYMBOLS["field"]:
+                    town_suitability += random.randint(0, 120)
+                else:
+                    town_suitability += random.randint(0, 100)
+
+        if town_suitability >= MAP_PARAMS["town_build_param"]:
+            points.append(local_i)
+    return points
 
 # Function that smooths out long corners
-def curve_corners(symbol):
+def curve_corners_by_symbol(symbol):
     t = 0
-    while t <= MAP_PARAMS["curve_corner_param"]:
+    while t <= MAP_PARAMS["curve_corner_by_symbol_param"]:
         t += 1
         for i in global_map:
             if  global_map[i] == symbol:
@@ -395,7 +349,7 @@ def curve_corners(symbol):
                 try:
                     up_symbol = global_map[x]
                 except:
-                    up_symbol = GLOBAL_TOOL_SYMBOLS["illegal"]
+                    up_symbol = TOOL_SYMBOLS["illegal"]
                 if up_symbol != symbol:
                     rectangle_sides += 1
                 # - U
@@ -404,7 +358,7 @@ def curve_corners(symbol):
                 try:
                     down_symbol = global_map[x]
                 except:
-                    down_symbol = GLOBAL_TOOL_SYMBOLS["illegal"]
+                    down_symbol = TOOL_SYMBOLS["illegal"]
                 if down_symbol != symbol:
                     rectangle_sides += 1
                 # - D
@@ -416,8 +370,8 @@ def curve_corners(symbol):
                     try:
                         left_symbol = global_map[x]
                     except:
-                        left_symbol = GLOBAL_TOOL_SYMBOLS["illegal"]
-                    if down_symbol != symbol:
+                        left_symbol = TOOL_SYMBOLS["illegal"]
+                    if left_symbol != symbol:
                         rectangle_sides += 1
                 # - L
                 # - R
@@ -428,21 +382,84 @@ def curve_corners(symbol):
                     try:
                         right_symbol = global_map[x]
                     except:
-                        right_symbol = GLOBAL_TOOL_SYMBOLS["illegal"]
-                    if down_symbol != symbol:
+                        right_symbol = TOOL_SYMBOLS["illegal"]
+                    if right_symbol != symbol:
                         rectangle_sides += 1
                 # -R
                 if rectangle_sides == 4:
-                    global_map[i] = GLOBAL_MAP_SYMBOLS["land"]
-                elif rectangle_sides == 1 and t <= MAP_PARAMS["curve_corner_param"]:
+                    global_map[i] = MAP_SYMBOLS["land"]
+                elif rectangle_sides == 1 and t <= MAP_PARAMS["curve_corner_by_symbol_param"]:
                     if random.randint(0, 50) == 1:
-                        global_map[i] = GLOBAL_MAP_SYMBOLS["land"]
-                elif rectangle_sides == 2 and t <= MAP_PARAMS["curve_corner_param"]:
+                        global_map[i] = MAP_SYMBOLS["land"]
+                elif rectangle_sides == 2 and t <= MAP_PARAMS["curve_corner_by_symbol_param"]:
                     if random.randint(0, 3) != 1:
-                        global_map[i] = GLOBAL_MAP_SYMBOLS["land"]
-                elif rectangle_sides == 3 and t <= MAP_PARAMS["curve_corner_param"]:
+                        global_map[i] = MAP_SYMBOLS["land"]
+                elif rectangle_sides == 3 and t <= MAP_PARAMS["curve_corner_by_symbol_param"]:
                     if random.randint(0, 5) != 1:
-                        global_map[i] = GLOBAL_MAP_SYMBOLS["land"]
+                        global_map[i] = MAP_SYMBOLS["land"]
+                else:
+                    pass
+
+def curve_corners_by_color(color):
+    t = 0
+    while t <= MAP_PARAMS["curve_corner_by_color_param"]:
+        t += 1
+        for i in global_map:
+            if  global_color[i] == MAP_COLORS[color]:
+                rectangle_sides = 0
+                # - U
+                x = i - global_width
+                try:
+                    up_symbol = global_color[x]
+                except:
+                    up_symbol = TOOL_SYMBOLS["illegal"]
+                if up_symbol != MAP_COLORS[color]:
+                    rectangle_sides += 1
+                # - U
+                # - D
+                x = i + global_width
+                try:
+                    down_symbol = global_color[x]
+                except:
+                    down_symbol = TOOL_SYMBOLS["illegal"]
+                if down_symbol != MAP_COLORS[color]:
+                    rectangle_sides += 1
+                # - D
+                # - L
+                if i in global_left_border:
+                    pass
+                else:
+                    x = i - 1
+                    try:
+                        left_symbol = global_color[x]
+                    except:
+                        left_symbol = TOOL_SYMBOLS["illegal"]
+                    if left_symbol != MAP_COLORS[color]:
+                        rectangle_sides += 1
+                # - L
+                # - R
+                if i + 1 in global_right_border:
+                    pass
+                else:
+                    x = i + 1
+                    try:
+                        right_symbol = global_color[x]
+                    except:
+                        right_symbol = TOOL_SYMBOLS["illegal"]
+                    if right_symbol != MAP_COLORS[color]:
+                        rectangle_sides += 1
+                # -R
+                if rectangle_sides == 4:
+                    global_color[i] = MAP_COLORS["reset"]
+                elif rectangle_sides == 1 and t <= MAP_PARAMS["curve_corner_by_color_param"]:
+                    if random.randint(0, 50) == 1:
+                        global_color[i] = MAP_COLORS["reset"]
+                elif rectangle_sides == 2 and t <= MAP_PARAMS["curve_corner_by_color_param"]:
+                    if random.randint(0, 3) != 1:
+                        global_color[i] = MAP_COLORS["reset"]
+                elif rectangle_sides == 3 and t <= MAP_PARAMS["curve_corner_by_color_param"]:
+                    if random.randint(0, 5) != 1:
+                        global_color[i] = MAP_COLORS["reset"]
                 else:
                     pass
 
@@ -456,8 +473,8 @@ def outline_border(symbol):
             try:
                 up_symbol = global_map[x]
             except:
-                up_symbol = GLOBAL_TOOL_SYMBOLS["illegal"]
-            if up_symbol == GLOBAL_MAP_SYMBOLS["land"]:
+                up_symbol = TOOL_SYMBOLS["illegal"]
+            if up_symbol == MAP_SYMBOLS["land"]:
                 rectangle_sides["U"] = 1
             # - U
             # - D
@@ -465,8 +482,8 @@ def outline_border(symbol):
             try:
                 down_symbol = global_map[x]
             except:
-                down_symbol = GLOBAL_TOOL_SYMBOLS["illegal"]
-            if down_symbol == GLOBAL_MAP_SYMBOLS["land"]:
+                down_symbol = TOOL_SYMBOLS["illegal"]
+            if down_symbol == MAP_SYMBOLS["land"]:
                 rectangle_sides["D"] = 1
             # - D
             # - L
@@ -477,8 +494,8 @@ def outline_border(symbol):
                 try:
                     left_symbol = global_map[x]
                 except:
-                    left_symbol = GLOBAL_TOOL_SYMBOLS["illegal"]
-                if left_symbol == GLOBAL_MAP_SYMBOLS["land"]:
+                    left_symbol = TOOL_SYMBOLS["illegal"]
+                if left_symbol == MAP_SYMBOLS["land"]:
                     rectangle_sides["L"] = 1
             # - L
             # - R
@@ -489,8 +506,8 @@ def outline_border(symbol):
                 try:
                     right_symbol = global_map[x]
                 except:
-                    right_symbol = GLOBAL_TOOL_SYMBOLS["illegal"]
-                if right_symbol == GLOBAL_MAP_SYMBOLS["land"]:
+                    right_symbol = TOOL_SYMBOLS["illegal"]
+                if right_symbol == MAP_SYMBOLS["land"]:
                     rectangle_sides["R"] = 1
             # - R
             if rectangle_sides["U"] == 1 and rectangle_sides["D"] == 1 and rectangle_sides["R"] == 1:
@@ -517,85 +534,74 @@ def outline_border(symbol):
 def build_water():
     build_sea()
     build_river()
-    outline_border(GLOBAL_MAP_SYMBOLS["water"])
+    outline_border(MAP_SYMBOLS["water"])
 
 def build_river():
     global global_box
-    global global_shapes
-    global_shapes = RIVER_BOX_SHAPES_1
-    points = design_locations("river")
+    points = design_river_locations()
     points.sort()
     for x in points:
-        global_box = random.choice(list(global_shapes.keys()))
-        place_box(x, GLOBAL_MAP_SYMBOLS["water"])
+        global_box = get_random_box(BOX_SIZE_LEVEL["river"])
+        place_box(x, MAP_SYMBOLS["water"])
 
 def build_sea():
     global global_box
-    global global_shapes
-    global_shapes = SEA_BOX_SHAPES_1
-    points = design_locations("sea")
+    points = design_sea_locations()
     points.sort()
     for x in points:
-        global_box = random.choice(list(global_shapes.keys()))
-        place_box(x, GLOBAL_MAP_SYMBOLS["water"])
+        global_box = get_random_box(BOX_SIZE_LEVEL["sea"])
+        place_box(x, MAP_SYMBOLS["water"])
 
 def build_forest():
-    global global_box
-    points = design_locations("forest")
+    points = design_normal_locations(MAP_PARAMS["forest_rarity"])
     for x in points:
-        global_map[x] = GLOBAL_MAP_SYMBOLS["forest"]
+        global_map[x] = MAP_SYMBOLS["forest"]
 
 def build_field():
-    global global_box
-    points = design_locations("field")
+    points = design_normal_locations(MAP_PARAMS["field_rarity"])
     for x in points:
-        global_map[x] = GLOBAL_MAP_SYMBOLS["field"]
-
-def build_towns():
-    global global_box
-    global global_shapes
-    global_shapes = TOWN_BOX_SHAPES_1
-    points = design_locations("town")
-    points.sort()
-    for x in points:
-        global_box = random.choice(list(global_shapes.keys()))
-        place_box(x, GLOBAL_MAP_SYMBOLS["town"])
+        global_map[x] = MAP_SYMBOLS["field"]
 
 def build_mountains():
     global global_box
-    global global_shapes
-    global_shapes = MOUNTAIN_BOX_SHAPES_1
-    points = design_locations("mountain")
+    points = design_normal_locations(MAP_PARAMS["mountain_rarity"])
     for x in points:
-        global_box = random.choice(list(global_shapes.keys()))
-        place_box(x, GLOBAL_MAP_SYMBOLS["mountain"])
-    curve_corners(GLOBAL_MAP_SYMBOLS["mountain"])
+        global_box = get_random_box(BOX_SIZE_LEVEL["mountain"])
+        place_box(x, MAP_SYMBOLS["mountain"])
+    curve_corners_by_symbol(MAP_SYMBOLS["mountain"])
 
 def build_mineral():
     global global_box
-    global global_shapes
-    global_shapes = MINERAL_BOX_SHAPES_1
-    points = design_locations("gold")
+    points = design_normal_locations(MAP_PARAMS["gold_rarity"])
     for x in points:
-        global_box = random.choice(list(global_shapes.keys()))
-        place_box(x, GLOBAL_MAP_SYMBOLS["gold"])
-    curve_corners(GLOBAL_MAP_SYMBOLS["gold"])
-    points = design_locations("iron")
+        global_box = get_random_box(BOX_SIZE_LEVEL["mineral"])
+        place_box(x, MAP_SYMBOLS["gold"])
+    curve_corners_by_symbol(MAP_SYMBOLS["gold"])
+
+    points = design_normal_locations(MAP_PARAMS["iron_rarity"])
     for x in points:
-        global_box = random.choice(list(global_shapes.keys()))
-        place_box(x, GLOBAL_MAP_SYMBOLS["iron"])
-    curve_corners(GLOBAL_MAP_SYMBOLS["iron"])
+        global_box = get_random_box(BOX_SIZE_LEVEL["mineral"])
+        place_box(x, MAP_SYMBOLS["iron"])
+    curve_corners_by_symbol(MAP_SYMBOLS["iron"])
+
+def build_towns():
+    global global_box
+    points = design_town_locations()
+    points.sort()
+    for x in points:
+        global_box = get_random_box(BOX_SIZE_LEVEL["town"])
+        place_box(x, MAP_SYMBOLS["town"])
 
 def build_state():
     global global_box
-    global global_shapes
-    global_shapes = STATE_BOX_SHAPES_1
-    points = design_locations("state")
+    points = design_state_locations()
     for x in points:
-        global_box = random.choice(list(global_shapes.keys()))
-        color = random.choice(list(GLOBAL_MAP_COLORS.keys()))
+        global_box = get_random_box(BOX_SIZE_LEVEL["state"])
+        color = random.choice(list(MAP_COLORS.keys())[:len(MAP_COLORS) - 1])
         place_color(x, color)
-    #curve_corners(GLOBAL_MAP_SYMBOLS["state"])
+    for color in MAP_COLORS.keys():
+        if color != "reset":
+            curve_corners_by_color(color)
 
 def user_input():
     global global_map_language
@@ -623,8 +629,7 @@ def print_map():
     i = 0
     for i in range(global_height):
         for x in range(global_width):
-            print(f"{global_color[c]}{global_map[c]}{GLOBAL_MAP_COLORS['reset']}", end = "")
-            #print(global_map[c], end = "")
+            print(f"{global_color[c]}{global_map[c]}{MAP_COLORS['reset']}", end = "")
             x += 1
             c += 1
         try:
@@ -634,7 +639,7 @@ def print_map():
         x = 1
         i += 1
 
-def save_map_to_file():
+def save_map():
     timestamp = time.strftime("%Y-%m-%dT%H:%M%SZ")
     file_name = "output/" + global_name.strip() + "_" + timestamp + ".txt"
     original_stdout = sys.stdout
@@ -656,5 +661,5 @@ while True:
     build_state()
     create_intro()
     print_map()
-    save_map_to_file()
+    save_map()
     print("")
