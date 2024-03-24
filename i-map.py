@@ -42,32 +42,29 @@ MINERAL_BOX_SHAPES_1 = {
     4:{"x": 5, "y": 6},
 }
 
+STATE_BOX_SHAPES_1 = {
+    1:{"x": 15, "y": 5},
+    2:{"x": 9, "y": 7},
+    3:{"x": 8, "y": 24},
+    4:{"x": 24, "y": 5},
+    5:{"x": 7, "y": 15},
+    6:{"x": 24, "y": 15},
+}
+
 MAP_PARAMS = {
-    # Determining the odds of rivers separating
     "river_separate_param" : 30,
-    # Determining river number
     "river_number" : 10,
-    # Determining river number random factor
     "river_number_random_param" : 3,
-    # Determining sea number
     "side_sea_number" : 2,
-    # Determining the odds of forest appearing
     "forest_param" : 6,
-    # Determining the odds of field appearing
     "field_param" : 3,
-    # Determining the scope of detecting town suitability 
     "town_scope_param" : 1,
-    # Determining the odds of towns building 
     "town_build_param" : 666,
-    # Determining mountain number
     "mountain_number" : 25,
-    # Determining gold number
     "gold_number" : 10,
-    # Determining iron number
     "iron_number" : 18,
-    # Determining degree of curving
+    "state_number" : 50,
     "curve_corner_param" : 5,
-    # Determining default language
     "default_language" : "cn",
 }
 
@@ -82,6 +79,17 @@ GLOBAL_MAP_SYMBOLS = {
     "mountain" : "M",
 }
 
+GLOBAL_MAP_COLORS = {
+    "blue": "\033[94m",
+    "green": "\033[92m",
+    "red": "\033[91m",
+    "yellow": "\033[93m",
+    "purple": "\033[95m",
+    "cyan": "\033[96m",
+    "white": "\033[97m",
+    "reset": "\033[0m",
+}
+
 GLOBAL_TOOL_SYMBOLS = {
     "illegal": "?",
 }
@@ -92,6 +100,7 @@ global_map_language = MAP_PARAMS["default_language"]
 # Function that creates the basic map, defines stuff like size, legend, positions on left/right side, ect
 def initialize_map():
     global global_map
+    global global_color
     global global_shapes
     global global_height
     global global_width
@@ -107,6 +116,7 @@ def initialize_map():
     global global_name
 
     global_map = {}
+    global_color = {}
     global_input_area_height = 3
     global_info_bar_width = 25
     size = os.get_terminal_size()
@@ -115,6 +125,7 @@ def initialize_map():
     global_map_size = global_height * global_width
     for x in range(global_map_size):
         global_map[x] = GLOBAL_MAP_SYMBOLS["land"]
+        global_color[x] = GLOBAL_MAP_COLORS["reset"]
     global_border = [x for x in range(global_map_size) if (x // global_width in (0, global_height - 1)) or (x % global_width == 0) or ((x + 1) % global_width == 0)]
     global_up_border = [x for x in range(global_map_size) if (x // global_width == 0)]
     global_down_border = [x for x in range(global_map_size) if (x // global_width == global_height - 1)]
@@ -246,6 +257,20 @@ def place_box(point, symbol):
         if global_map[x] == GLOBAL_MAP_SYMBOLS["land"] or global_map[x] == GLOBAL_MAP_SYMBOLS["field"] or global_map[x] == GLOBAL_MAP_SYMBOLS["forest"]:
             global_map[x] = symbol
 
+def place_color(point, color):
+    x = 0
+    y = 0
+    box = []
+    while y != global_shapes[global_box]["y"]:
+        while x != global_shapes[global_box]["x"]:
+            if 0 <= point + y * global_width +x < global_map_size:
+                box.append(point + y * global_width + x)
+            x += 1
+        y += 1
+        x = 0
+    for x in box:
+        global_color[x] = GLOBAL_MAP_COLORS[color]
+
 def pick_locations(begin, end):
    local_begin_row = begin // global_width
    local_begin_column = begin - local_begin_row * global_width
@@ -345,6 +370,14 @@ def design_locations(geo_type):
         for local_i in range(MAP_PARAMS["iron_number"]):
             point_a = random.randint(0, global_map_size - 1)
             global_points.append(point_a)
+        return global_points
+    elif geo_type == "state":
+        for local_i in range(MAP_PARAMS["state_number"]):
+            while True:
+                point_a = random.randint(0, global_map_size - 1)
+                if global_map[point_a] == GLOBAL_MAP_SYMBOLS["town"]:
+                    global_points.append(point_a)
+                    break
         return global_points
     else:
         return None
@@ -553,6 +586,17 @@ def build_mineral():
         place_box(x, GLOBAL_MAP_SYMBOLS["iron"])
     curve_corners(GLOBAL_MAP_SYMBOLS["iron"])
 
+def build_state():
+    global global_box
+    global global_shapes
+    global_shapes = STATE_BOX_SHAPES_1
+    points = design_locations("state")
+    for x in points:
+        global_box = random.choice(list(global_shapes.keys()))
+        color = random.choice(list(GLOBAL_MAP_COLORS.keys()))
+        place_color(x, color)
+    #curve_corners(GLOBAL_MAP_SYMBOLS["state"])
+
 def user_input():
     global global_map_language
     print("Regenerate(1) Set map language(2)")
@@ -579,7 +623,8 @@ def print_map():
     i = 0
     for i in range(global_height):
         for x in range(global_width):
-            print(global_map[c], end = "")
+            print(f"{global_color[c]}{global_map[c]}{GLOBAL_MAP_COLORS['reset']}", end = "")
+            #print(global_map[c], end = "")
             x += 1
             c += 1
         try:
@@ -608,6 +653,7 @@ while True:
     build_forest()
     build_field()
     build_towns()
+    build_state()
     create_intro()
     print_map()
     save_map_to_file()
