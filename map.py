@@ -14,7 +14,7 @@ MAP_PARAMS = {
     "gold_rarity" : 100,
     "iron_rarity" : 50,
     "town_scope_param" : 1,
-    "town_build_param" : 666,
+    "town_build_param" : 700,
     "state_number" : 100,
     "state_retry" : 3,
     "curve_corner_by_symbol_param" : 4,
@@ -47,8 +47,6 @@ MAP_COLORS = {
     "green": "\033[32m",
     "yellow": "\033[33m",
     "blue": "\033[34m",
-    "magenta": "\033[35m",
-    "cyan": "\033[36m",
     "light_red": "\033[91m",
     "light_green": "\033[92m",
     "light_yellow": "\033[93m",
@@ -141,10 +139,25 @@ def get_symbol_meaning():
 
     return symbol_meaning
 
+def the_most_color():
+    color_stat = {}
+    for x in global_map:
+        if global_color[x] == MAP_COLORS["reset"]:
+            continue
+        color_stat[global_color[x]] = color_stat.get(global_color[x], 0) + 1
+        if global_map[x] == MAP_SYMBOLS["town"]:
+            color_stat[global_color[x]] += 2
+        if global_map[x] == MAP_SYMBOLS["iron"]:
+            color_stat[global_color[x]] += 3
+        if global_map[x] == MAP_SYMBOLS["gold"]:
+            color_stat[global_color[x]] += 5
+    return max(color_stat, key=color_stat.get, default=MAP_COLORS["reset"])
+
 def get_map_statistics():
     water_area_size = 0
     land_area_size = 0
-    population = 0
+    town = 0
+    unoccupied_town = 0
     gold_reserves = 0
     iron_reserves = 0
 
@@ -154,7 +167,9 @@ def get_map_statistics():
         elif global_map[x] != MAP_SYMBOLS["water"]:
             land_area_size += 1
             if global_map[x] == MAP_SYMBOLS["town"]:
-                population += 1
+                town += 1
+                if global_color[x] == MAP_COLORS["reset"]:
+                    unoccupied_town += 1
             elif global_map[x] == MAP_SYMBOLS["gold"]:
                 gold_reserves += 1
             elif global_map[x] == MAP_SYMBOLS["iron"]:
@@ -168,7 +183,8 @@ def get_map_statistics():
         symbol_meaning = [
             ("陆地面积: %d" % land_area_size).ljust(15),
             ("水域面积: %d" % water_area_size).ljust(15),
-            ("人口数量: %d" % population).ljust(15),
+            ("城镇数量: %d" % town).ljust(15),
+            ("未占领城镇: %d" % unoccupied_town).ljust(14),
             ("金矿储备: %d" % gold_reserves).ljust(15),
             ("铁矿储备: %d" % iron_reserves).ljust(15),
         ]
@@ -176,7 +192,8 @@ def get_map_statistics():
         symbol_meaning = [
             ("LAND AREA: %d" % land_area_size).ljust(19),
             ("WATER AREA: %d" % water_area_size).ljust(19),
-            ("POPULATION: %d" % population).ljust(19),
+            ("TOWN: %d" % town).ljust(19),
+            ("UNOCCUPIED TOWN: %d" % unoccupied_town).ljust(19),
             ("GOLD RESERVES: %d" % gold_reserves).ljust(19),
             ("IRON RESERVES: %d" % iron_reserves).ljust(19),
         ]
@@ -356,58 +373,24 @@ def curve_corners_by_symbol(symbol):
         for i in global_map:
             if  global_map[i] == symbol:
                 rectangle_sides = 0
-                # - U
-                x = i - global_width
-                try:
-                    up_symbol = global_map[x]
-                except:
-                    up_symbol = TOOL_SYMBOLS["illegal"]
-                if up_symbol != symbol:
-                    rectangle_sides += 1
-                # - U
-                # - D
-                x = i + global_width
-                try:
-                    down_symbol = global_map[x]
-                except:
-                    down_symbol = TOOL_SYMBOLS["illegal"]
-                if down_symbol != symbol:
-                    rectangle_sides += 1
-                # - D
-                # - L
-                if i in global_left_border:
-                    pass
-                else:
-                    x = i - 1
+                neighbors = [i - global_width, i + global_width, i - 1, i + 1]
+                for x in neighbors:
                     try:
-                        left_symbol = global_map[x]
+                        if global_map[x] != MAP_SYMBOLS[symbol]:
+                            rectangle_sides += 1
                     except:
-                        left_symbol = TOOL_SYMBOLS["illegal"]
-                    if left_symbol != symbol:
-                        rectangle_sides += 1
-                # - L
-                # - R
-                if i + 1 in global_right_border:
-                    pass
-                else:
-                    x = i + 1
-                    try:
-                        right_symbol = global_map[x]
-                    except:
-                        right_symbol = TOOL_SYMBOLS["illegal"]
-                    if right_symbol != symbol:
-                        rectangle_sides += 1
-                # -R
-                if rectangle_sides == 4:
-                    global_map[i] = MAP_SYMBOLS["land"]
-                elif rectangle_sides == 1 and t <= MAP_PARAMS["curve_corner_by_symbol_param"]:
+                        continue
+                if rectangle_sides == 1:
                     if random.randint(0, 50) == 1:
                         global_map[i] = MAP_SYMBOLS["land"]
-                elif rectangle_sides == 2 and t <= MAP_PARAMS["curve_corner_by_symbol_param"]:
+                elif rectangle_sides == 2:
                     if random.randint(0, 3) != 1:
                         global_map[i] = MAP_SYMBOLS["land"]
-                elif rectangle_sides == 3 and t <= MAP_PARAMS["curve_corner_by_symbol_param"]:
+                elif rectangle_sides == 3:
                     if random.randint(0, 5) != 1:
+                        global_map[i] = MAP_SYMBOLS["land"]
+                elif rectangle_sides == 4:
+                    if random.randint(0, 10) != 1:
                         global_map[i] = MAP_SYMBOLS["land"]
                 else:
                     pass
@@ -418,59 +401,27 @@ def curve_corners_by_color(color):
         t += 1
         for i in global_map:
             if  global_color[i] == MAP_COLORS[color]:
+                if global_map[i] == MAP_SYMBOLS["town"] or global_map[i] == MAP_SYMBOLS["gold"] or global_map[i] == MAP_SYMBOLS["iron"]:
+                    continue
                 rectangle_sides = 0
-                # - U
-                x = i - global_width
-                try:
-                    up_symbol = global_color[x]
-                except:
-                    up_symbol = TOOL_SYMBOLS["illegal"]
-                if up_symbol != MAP_COLORS[color]:
-                    rectangle_sides += 1
-                # - U
-                # - D
-                x = i + global_width
-                try:
-                    down_symbol = global_color[x]
-                except:
-                    down_symbol = TOOL_SYMBOLS["illegal"]
-                if down_symbol != MAP_COLORS[color]:
-                    rectangle_sides += 1
-                # - D
-                # - L
-                if i in global_left_border:
-                    pass
-                else:
-                    x = i - 1
+                neighbors = [i - global_width, i + global_width, i - 1, i + 1]
+                for x in neighbors:
                     try:
-                        left_symbol = global_color[x]
+                        if global_color[x] != MAP_COLORS[color]:
+                            rectangle_sides += 1
                     except:
-                        left_symbol = TOOL_SYMBOLS["illegal"]
-                    if left_symbol != MAP_COLORS[color]:
-                        rectangle_sides += 1
-                # - L
-                # - R
-                if i + 1 in global_right_border:
-                    pass
-                else:
-                    x = i + 1
-                    try:
-                        right_symbol = global_color[x]
-                    except:
-                        right_symbol = TOOL_SYMBOLS["illegal"]
-                    if right_symbol != MAP_COLORS[color]:
-                        rectangle_sides += 1
-                # -R
-                if rectangle_sides == 4:
-                    global_color[i] = MAP_COLORS["reset"]
-                elif rectangle_sides == 1 and t <= MAP_PARAMS["curve_corner_by_color_param"]:
-                    if random.randint(0, 50) == 1:
+                        continue
+                if rectangle_sides == 1:
+                    if random.randint(0, 10) == 1:
                         global_color[i] = MAP_COLORS["reset"]
-                elif rectangle_sides == 2 and t <= MAP_PARAMS["curve_corner_by_color_param"]:
+                elif rectangle_sides == 2:
+                    if random.randint(0, 3) == 1:
+                        global_color[i] = MAP_COLORS["reset"]
+                elif rectangle_sides == 3:
                     if random.randint(0, 3) != 1:
                         global_color[i] = MAP_COLORS["reset"]
-                elif rectangle_sides == 3 and t <= MAP_PARAMS["curve_corner_by_color_param"]:
-                    if random.randint(0, 5) != 1:
+                elif rectangle_sides == 4:
+                    if random.randint(0, 10) != 1:
                         global_color[i] = MAP_COLORS["reset"]
                 else:
                     pass
@@ -631,6 +582,7 @@ def build_next_state():
 # Function that prints the map to the console
 def print_map():
     create_intro()
+    intro_color = the_most_color()
     c = 0
     x = 0
     i = 0
@@ -640,7 +592,7 @@ def print_map():
             x += 1
             c += 1
         try:
-            print(global_intro[i])
+            print(f"{intro_color}{global_intro[i]}{MAP_COLORS['reset']}")
         except:
             print("   |                    |")
         x = 1
