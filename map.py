@@ -2,6 +2,7 @@ import random
 import os
 import sys
 import time
+import queue
 
 MAP_PARAMS = {
     "river_separate_param" : 30,
@@ -10,15 +11,15 @@ MAP_PARAMS = {
     "side_sea_number" : 2,
     "forest_rarity" : 6,
     "field_rarity" : 3,
-    "mountain_rarity" : 50,
-    "gold_rarity" : 100,
-    "iron_rarity" : 50,
-    "town_scope_param" : 1,
-    "town_build_param" : 700,
-    "state_number" : 100,
-    "state_retry" : 3,
+    "mountain_rarity" : 100,
+    "gold_rarity" : 300,
+    "iron_rarity" : 100,
+    "town_scope_param" : 2,
+    "town_build_param" : 1500,
+    "state_number" : 10,
     "curve_corner_by_symbol_param" : 4,
     "curve_corner_by_color_param" : 6,
+    "max_force" : 10,
     "default_language" : "cn",
 }
 
@@ -34,12 +35,12 @@ MAP_SYMBOLS = {
 }
 
 BOX_SIZE_LEVEL = {
-    "sea": 5,
-    "river": 1,
-    "town": 2,
-    "mountain": 4,
-    "mineral": 3,
-    "state": 25,
+    "sea": [3,9],
+    "river": [1,3],
+    "town": [1,1],
+    "mountain": [1,8],
+    "mineral": [1,4],
+    "state": [15,45],
 }
 
 MAP_COLORS = {
@@ -80,6 +81,7 @@ def initialize_map():
     global global_input_area_height
     global global_info_bar_width
     global global_name
+    global new_state_color
 
     global_map = {}
     global_color = {}
@@ -100,6 +102,7 @@ def initialize_map():
     global_right_border = [x for x in range(global_map_size) if ((x + 0) % global_width == 0)]
     global_border_group = [global_up_border, global_down_border, global_left_border, global_right_border]
     global_name = random_name()
+    new_state_color = "reset"
 
 # Functions that name stuff
 def random_name():
@@ -226,11 +229,11 @@ def create_intro():
 
     global_intro[global_height - 1] = "   +--------------------+"
 
-def get_random_box(size_level):
-    x = int((size_level + 1) / 2); y = int((size_level + 1) / 2)
-    for i in range(size_level):
-        x += random.randint(0, 2)
-        y += random.randint(0, 2)
+def get_random_box(levels):
+    min_level = levels[0]
+    max_level = levels[1]
+    x = random.randint(min_level, max_level)
+    y = random.randint(min_level, max_level)
     return {"x": x, "y": y}
 
 # Function that places Box on x
@@ -250,18 +253,19 @@ def place_box(point, symbol):
             global_map[x] = symbol
 
 def place_color(point, color):
+    global global_color
     x = 0
     y = 0
     box = []
-    point = point - global_box["y"] / 2 * global_width - global_box["x"] / 2
+    # put point in the center
+    base_point = point - (global_box["y"] // 2) * global_width - global_box["x"] // 2
     while y != global_box["y"]:
         while x != global_box["x"]:
-            if 0 <= point + y * global_width +x < global_map_size:
-                # put point in the center
-                box.append(point + y * global_width + x)
+            box.append((base_point + y * global_width + x + global_map_size) % global_map_size)
             x += 1
         y += 1
         x = 0
+    assert point in box
     for x in box:
         global_color[x] = MAP_COLORS[color]
 
@@ -288,7 +292,7 @@ def pick_locations(begin, end):
 def design_river_locations():
     global global_points
     global_points = []
-    for local_i in range(MAP_PARAMS["river_number"] + MAP_PARAMS["river_number_random_param"]):
+    for _ in range(MAP_PARAMS["river_number"] + MAP_PARAMS["river_number_random_param"]):
         point_a = random.choice(global_border)
         point_b = random.choice(global_border)
         global_points.append(point_a)
@@ -299,7 +303,7 @@ def design_river_locations():
 def design_sea_locations():
     global global_points
     global_points = []
-    for local_i in range(MAP_PARAMS["side_sea_number"]):
+    for _ in range(MAP_PARAMS["side_sea_number"]):
         for x in range(4):
             point_a = random.choice(global_border_group[x])
             point_b = random.choice(global_border_group[x])
@@ -319,19 +323,20 @@ def design_normal_locations(rarity):
 
 def design_state_location():
     global town_points
-    retry = 0
-    while retry < MAP_PARAMS["state_retry"]:
-        point = random.choice(town_points)
-        if global_color[point] == MAP_COLORS["reset"]:
-            return point
-        retry += 1
-    return random.choice(town_points)
+    global unoccupied_town_points
+    unoccupied_town_points = list(filter(lambda x: global_color[x] == MAP_COLORS["reset"], town_points))
+    if len(unoccupied_town_points) == 0:
+        raise Exception("No unoccupied town points")
+    return random.choice(unoccupied_town_points)
 
 def design_state_locations():
     global global_points
     global_points = []
-    for local_i in range(MAP_PARAMS["state_number"]):
-        global_points.append(design_state_location())
+    for _ in range(MAP_PARAMS["state_number"]):
+        try:
+            global_points.append(design_state_location())
+        except:
+            continue
     return global_points
 
 def design_town_locations():
@@ -347,19 +352,19 @@ def design_town_locations():
                     side_symbol = MAP_SYMBOLS["water"]
 
                 if side_symbol == MAP_SYMBOLS["water"]:
-                    town_suitability += random.randint(30, 130)
+                    town_suitability += random.randint(10, 120)
                 elif side_symbol == MAP_SYMBOLS["gold"]:
-                    town_suitability += random.randint(20, 160)
+                    town_suitability += random.randint(10, 160)
                 elif side_symbol == MAP_SYMBOLS["iron"]:
-                    town_suitability += random.randint(40, 130)
+                    town_suitability += random.randint(10, 140)
                 elif side_symbol == MAP_SYMBOLS["mountain"]:
-                    town_suitability += random.randint(20, 60)
+                    town_suitability += random.randint(0, 60)
                 elif side_symbol == MAP_SYMBOLS["forest"]:
                     town_suitability += random.randint(20, 80)
                 elif side_symbol == MAP_SYMBOLS["field"]:
-                    town_suitability += random.randint(0, 120)
+                    town_suitability += random.randint(40, 100)
                 else:
-                    town_suitability += random.randint(0, 100)
+                    town_suitability += random.randint(40, 60)
 
         if town_suitability >= MAP_PARAMS["town_build_param"]:
             points.append(local_i)
@@ -396,14 +401,17 @@ def curve_corners_by_symbol(symbol):
                     pass
 
 def curve_corners_by_color(color):
+    global global_color
     t = 0
     while t <= MAP_PARAMS["curve_corner_by_color_param"]:
         t += 1
         for i in global_map:
             if  global_color[i] == MAP_COLORS[color]:
-                if global_map[i] == MAP_SYMBOLS["town"] or global_map[i] == MAP_SYMBOLS["gold"] or global_map[i] == MAP_SYMBOLS["iron"]:
-                    continue
                 rectangle_sides = 0
+                # temp sol: make it hard to curve
+                if global_map[i] == MAP_SYMBOLS["town"] or global_map[i] == MAP_SYMBOLS["gold"] or global_map[i] == MAP_SYMBOLS["iron"]:
+                    if len(unoccupied_town_points) >= 5 or random.randint(0, 5) != 1:
+                        continue
                 neighbors = [i - global_width, i + global_width, i - 1, i + 1]
                 for x in neighbors:
                     try:
@@ -560,24 +568,91 @@ def build_towns():
         if global_map[x] == MAP_SYMBOLS["town"]:
             town_points.append(x)
 
+def remove_no_twon_states():
+    for color in MAP_COLORS:
+        if color == "reset":
+            continue
+        points = []
+        for x in global_color:
+            if global_color[x] == MAP_COLORS[color]:
+                if global_map[x] == MAP_SYMBOLS["town"]:
+                    points.clear()
+                    break
+                points.append(x)
+        for x in points:
+            global_color[x] = MAP_COLORS["reset"]
+
 def build_states():
     global global_box
+    global new_state_color
     points = design_state_locations()
     for x in points:
         global_box = get_random_box(BOX_SIZE_LEVEL["state"])
         color = random.choice(list(MAP_COLORS.keys())[:len(MAP_COLORS) - 1])
+        new_state_color = color
         place_color(x, color)
-    for color in MAP_COLORS.keys():
-        if color != "reset":
-            curve_corners_by_color(color)
+        assert global_color[x] == MAP_COLORS[color]
+        curve_corners_by_color(color)
+        remove_no_twon_states()
 
 def build_next_state():
     global global_box
-    point = design_state_location()
-    global_box = get_random_box(BOX_SIZE_LEVEL["state"])
-    color = random.choice(list(MAP_COLORS.keys())[:len(MAP_COLORS) - 1])
-    place_color(point, color)
-    curve_corners_by_color(color)
+    global new_state_color
+    new_state_color = "reset"
+    try:
+        point = design_state_location()
+        global_box = get_random_box(BOX_SIZE_LEVEL["state"])
+        color = random.choice(list(MAP_COLORS.keys())[:len(MAP_COLORS) - 1])
+        new_state_color = color
+        place_color(point, color)
+        assert global_color[point] == MAP_COLORS[color]
+        curve_corners_by_color(color)
+        remove_no_twon_states()
+    except:
+        raise Exception("No unoccupied town points")
+
+def populate_color(point):
+    global global_color
+    pq = queue.PriorityQueue()
+    visited = set()
+    pq.put((0, point))
+    final_color = MAP_COLORS["reset"]
+
+    while not pq.empty():
+        current = pq.get()
+        visited.add(current[1])
+        current_color = global_color[current[1]]
+        if current_color != MAP_COLORS["reset"]:
+            final_color = current_color
+            break
+        if current[0] > MAP_PARAMS["max_force"]:
+            break
+        neighbors = [(current[1] - global_width + global_map_size) % global_map_size, (current[1] + global_width) % global_map_size, (current[1] - 1 + global_map_size) % global_map_size, (current[1] + 1) % global_map_size]
+        for x in neighbors:
+            assert 0 <= x < global_map_size
+            if x not in visited:
+                force = current[0]
+                if global_map[x] == MAP_SYMBOLS["town"]:
+                    force -= 2
+                if global_map[x] == MAP_SYMBOLS["iron"] or global_map[x] == MAP_SYMBOLS["gold"]:
+                    force -= 1
+                if global_map[x] == MAP_SYMBOLS["land"] or global_map[x] == MAP_SYMBOLS["field"] or global_map[x] == MAP_SYMBOLS["forest"]:
+                    force += 1
+                if global_map[x] == MAP_SYMBOLS["water"]:
+                    force += 2
+                if global_map[x] == MAP_SYMBOLS["mountain"]:
+                    force += 5
+                force += random.randint(0, 2)
+                pq.put((force, x))
+    return final_color
+
+def finalize_state():
+    global global_color
+    new_global_color = global_color.copy()
+    for x in global_color:
+        if global_color[x] == MAP_COLORS["reset"]:
+            new_global_color[x] = populate_color(x)
+    global_color = new_global_color
 
 # Function that prints the map to the console
 def print_map():
@@ -588,15 +663,15 @@ def print_map():
     i = 0
     for i in range(global_height):
         for x in range(global_width):
-            print(f"{global_color[c]}{global_map[c]}{MAP_COLORS['reset']}", end = "")
-            x += 1
+            if global_color[c] == MAP_COLORS["reset"] and global_map[c] == MAP_SYMBOLS["town"]:
+                print(f"{intro_color}{global_map[c]}{MAP_COLORS['reset']}", end = "")
+            else:
+                print(f"{global_color[c]}{global_map[c]}{MAP_COLORS['reset']}", end = "")
             c += 1
         try:
             print(f"{intro_color}{global_intro[i]}{MAP_COLORS['reset']}")
         except:
-            print("   |                    |")
-        x = 1
-        i += 1
+            print(f"{MAP_COLORS[new_state_color]}   |                    |{MAP_COLORS['reset']}")
     print("")
 
 def save_map():
@@ -608,9 +683,12 @@ def save_map():
         print_map()
         sys.stdout = original_stdout
 
-def show_map():
+def show_map(t):
     print_map()
-    time.sleep(5)
+    if t == "auto":
+        time.sleep(10)
+    else:
+        input("Press Enter to continue...")
 
 def build_all():
     initialize_map()
@@ -621,35 +699,44 @@ def build_all():
     build_field()
     build_towns()
     build_states()
+    show_map("user")
+    finalize_state()
     print_map()
     save_map()
     print("")
 
-def build_by_step():
+def build_by_step(t):
     initialize_map()
     build_water()
-    show_map()
+    show_map(t)
     build_mountains()
     build_mineral()
     build_forest()
     build_field()
-    show_map()
+    show_map(t)
     build_towns()
-    show_map()
+    show_map(t)
     for i in range(MAP_PARAMS["state_number"]):
-        build_next_state()
-        show_map()
+        try:
+            build_next_state()
+            show_map(t)
+        except:
+            break
+    finalize_state()
+    show_map(t)
     save_map()
 
 # Main loop
 while True:
-    print("New map(1) In stages(2) Set map language(4)")
+    print("New map(1) In steps[auto](2) In steps[user](3) Set map language(4)")
     cmd = input(">")
     if cmd == "1":
         build_all()
     if cmd == "2":
-        build_by_step()
+        build_by_step("auto")
     if cmd == "3":
+        build_by_step("user")
+    if cmd == "4":
         print("Input language: Chinese(cn), English(en)")
         language = input(">")
         print(language)
