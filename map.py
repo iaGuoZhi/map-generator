@@ -16,10 +16,11 @@ MAP_PARAMS = {
     "iron_rarity" : 100,
     "town_scope_param" : 2,
     "town_build_param" : 1500,
-    "state_number" : 10,
+    "state_number" : 15,
     "curve_corner_by_symbol_param" : 4,
     "curve_corner_by_color_param" : 6,
     "max_force" : 10,
+    "war_number" : 5000,
     "default_language" : "cn",
 }
 
@@ -40,7 +41,7 @@ BOX_SIZE_LEVEL = {
     "town": [1,1],
     "mountain": [1,8],
     "mineral": [1,4],
-    "state": [15,45],
+    "state": [10,40],
 }
 
 MAP_COLORS = {
@@ -50,7 +51,6 @@ MAP_COLORS = {
     "blue": "\033[34m",
     "light_red": "\033[91m",
     "light_green": "\033[92m",
-    "light_yellow": "\033[93m",
     "light_blue": "\033[94m",
     "purple": "\033[95m",
     "reset": "\033[0m",
@@ -400,17 +400,17 @@ def curve_corners_by_symbol(symbol):
                 else:
                     pass
 
-def curve_corners_by_color(color):
+def curve_corners_by_color(color, param):
     global global_color
     t = 0
-    while t <= MAP_PARAMS["curve_corner_by_color_param"]:
+    while t <= param:
         t += 1
         for i in global_map:
             if  global_color[i] == MAP_COLORS[color]:
                 rectangle_sides = 0
                 # temp sol: make it hard to curve
                 if global_map[i] == MAP_SYMBOLS["town"] or global_map[i] == MAP_SYMBOLS["gold"] or global_map[i] == MAP_SYMBOLS["iron"]:
-                    if len(unoccupied_town_points) >= 5 or random.randint(0, 5) != 1:
+                    if random.randint(0, 10) != 1:
                         continue
                 neighbors = [i - global_width, i + global_width, i - 1, i + 1]
                 for x in neighbors:
@@ -592,7 +592,7 @@ def build_states():
         new_state_color = color
         place_color(x, color)
         assert global_color[x] == MAP_COLORS[color]
-        curve_corners_by_color(color)
+        curve_corners_by_color(color, MAP_PARAMS["curve_corner_by_color_param"])
         remove_no_twon_states()
 
 def build_next_state():
@@ -606,7 +606,7 @@ def build_next_state():
         new_state_color = color
         place_color(point, color)
         assert global_color[point] == MAP_COLORS[color]
-        curve_corners_by_color(color)
+        curve_corners_by_color(color, MAP_PARAMS["curve_corner_by_color_param"])
         remove_no_twon_states()
     except:
         raise Exception("No unoccupied town points")
@@ -671,7 +671,12 @@ def print_map():
         try:
             print(f"{intro_color}{global_intro[i]}{MAP_COLORS['reset']}")
         except:
-            print(f"{MAP_COLORS[new_state_color]}   |                    |{MAP_COLORS['reset']}")
+            if i >= 20 and i < 20 + len(MAP_COLORS):
+                color = list(MAP_COLORS.keys())[i - 20]
+                color_symbol = color.ljust(19)
+                print(f"{MAP_COLORS[new_state_color]}   | {MAP_COLORS[color]}{color_symbol}{MAP_COLORS[new_state_color]}|{MAP_COLORS['reset']}")
+            else:
+                print(f"{MAP_COLORS[new_state_color]}   |                    |{MAP_COLORS['reset']}")
     print("")
 
 def save_map():
@@ -690,6 +695,18 @@ def show_map(t):
     else:
         input("Press Enter to continue...")
 
+def war(home_state_color):
+    color = 'reset'
+    if all(c == 'reset' or c == home_state_color for c in global_color.keys()):
+        return
+    while True:
+        color = random.choice(list(MAP_COLORS.keys())[:len(MAP_COLORS) - 1])
+        if MAP_COLORS[color] in global_color.values() and color != home_state_color:
+            break
+    war_size = random.randint(1, 15)
+    curve_corners_by_color(color, MAP_PARAMS["curve_corner_by_color_param"] * war_size)
+
+
 def build_all():
     initialize_map()
     build_water()
@@ -702,6 +719,17 @@ def build_all():
     show_map("user")
     finalize_state()
     print_map()
+    home_state_color = "reset"
+    while True:
+        home_state_color = input("Home state color>")
+        if home_state_color in MAP_COLORS:
+            break
+    for i in range(MAP_PARAMS["war_number"]):
+        war(home_state_color)
+        show_map("user")
+        finalize_state()
+        show_map("user")
+
     save_map()
     print("")
 
@@ -724,6 +752,16 @@ def build_by_step(t):
             break
     finalize_state()
     show_map(t)
+    home_state_color = "reset"
+    while True:
+        home_state_color = input("Home state color>")
+        if home_state_color in MAP_COLORS:
+            break
+    for i in range(MAP_PARAMS["war_number"]):
+        war(home_state_color)
+        show_map(t)
+        finalize_state()
+        show_map(t)
     save_map()
 
 # Main loop
