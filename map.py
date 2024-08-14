@@ -5,18 +5,18 @@ import time
 import queue
 
 MAP_PARAMS = {
-    "river_separate_param" : 30,
-    "river_number" : 10,
-    "river_number_random_param" : 3,
-    "side_sea_number" : 2,
+    "river_separate_param" : 25,
+    "river_number" : 15,
+    "river_number_random_param" : 15,
+    "side_sea_number" : 4,
     "forest_rarity" : 6,
     "field_rarity" : 3,
-    "mountain_rarity" : 100,
+    "mountain_rarity" : 200,
     "gold_rarity" : 300,
     "iron_rarity" : 100,
     "town_scope_param" : 2,
-    "town_build_param" : 1500,
-    "state_number" : 15,
+    "town_build_param" : 1700,
+    "state_number" : 35,
     "curve_corner_by_symbol_param" : 4,
     "curve_corner_by_color_param" : 6,
     "max_force" : 10,
@@ -36,12 +36,13 @@ MAP_SYMBOLS = {
 }
 
 BOX_SIZE_LEVEL = {
-    "sea": [3,9],
-    "river": [1,3],
-    "town": [1,1],
-    "mountain": [1,8],
-    "mineral": [1,4],
+    "sea": [0,5],
+    "river": [1,2],
+    "town": [1,2],
+    "mountain": [1,15],
+    "mineral": [1,5],
     "state": [10,40],
+
 }
 
 MAP_COLORS = {
@@ -49,10 +50,13 @@ MAP_COLORS = {
     "green": "\033[32m",
     "yellow": "\033[33m",
     "blue": "\033[34m",
+    "magenta": "\033[35m",
+    "cyan": "\033[36m",
     "light_red": "\033[91m",
     "light_green": "\033[92m",
     "light_blue": "\033[94m",
     "purple": "\033[95m",
+    "light_cyan": "\033[96m",
     "reset": "\033[0m",
 }
 
@@ -68,6 +72,8 @@ def initialize_map():
     global global_map
     global global_color
     global globa_points
+    global color_round
+    global color_stat
     global global_shapes
     global global_height
     global global_width
@@ -82,9 +88,13 @@ def initialize_map():
     global global_info_bar_width
     global global_name
     global new_state_color
+    global round
 
     global_map = {}
     global_color = {}
+    color_stat = {}
+    color_round = {}
+    round = 0
     global_points = []
     global_input_area_height = 3
     global_info_bar_width = 25
@@ -97,12 +107,14 @@ def initialize_map():
         global_color[x] = MAP_COLORS["reset"]
     global_border = [x for x in range(global_map_size) if (x // global_width in (0, global_height - 1)) or (x % global_width == 0) or ((x + 1) % global_width == 0)]
     global_up_border = [x for x in range(global_map_size) if (x // global_width == 0)]
-    global_down_border = [x for x in range(global_map_size) if (x // global_width == global_height - 1)]
+    global_down_border = [x for x in range(global_map_size) if (x // global_width == global_height - 5)]
     global_left_border = [x for x in range(global_map_size) if (x % global_width == 0)]
-    global_right_border = [x for x in range(global_map_size) if ((x + 0) % global_width == 0)]
+    global_right_border = [x for x in range(global_map_size) if ((x + 5) % global_width == 0)]
     global_border_group = [global_up_border, global_down_border, global_left_border, global_right_border]
     global_name = random_name()
     new_state_color = "reset"
+    for color in MAP_COLORS:
+        color_round[MAP_COLORS[color]] = 0
 
 # Functions that name stuff
 def random_name():
@@ -142,8 +154,18 @@ def get_symbol_meaning():
 
     return symbol_meaning
 
+def asni_to_color_name(asni):
+    for c in MAP_COLORS:
+        if (MAP_COLORS[c] == asni):
+            return c
+    return "reset"
+
 def the_most_color():
-    color_stat = {}
+    global color_stat
+    global color_round
+    global round
+    for color in MAP_COLORS:
+        color_stat[MAP_COLORS[color]] = 0
     for x in global_map:
         if global_color[x] == MAP_COLORS["reset"]:
             continue
@@ -154,6 +176,10 @@ def the_most_color():
             color_stat[global_color[x]] += 3
         if global_map[x] == MAP_SYMBOLS["gold"]:
             color_stat[global_color[x]] += 5
+    for color in MAP_COLORS:
+        if color_stat[MAP_COLORS[color]] != 0:
+            color_round[MAP_COLORS[color]] = round
+        color_stat[MAP_COLORS[color]] += color_round[MAP_COLORS[color]]
     return max(color_stat, key=color_stat.get, default=MAP_COLORS["reset"])
 
 def get_map_statistics():
@@ -352,11 +378,11 @@ def design_town_locations():
                     side_symbol = MAP_SYMBOLS["water"]
 
                 if side_symbol == MAP_SYMBOLS["water"]:
-                    town_suitability += random.randint(10, 120)
+                    town_suitability += random.randint(20, 180)
                 elif side_symbol == MAP_SYMBOLS["gold"]:
-                    town_suitability += random.randint(10, 160)
+                    town_suitability += random.randint(20, 170)
                 elif side_symbol == MAP_SYMBOLS["iron"]:
-                    town_suitability += random.randint(10, 140)
+                    town_suitability += random.randint(10, 160)
                 elif side_symbol == MAP_SYMBOLS["mountain"]:
                     town_suitability += random.randint(0, 60)
                 elif side_symbol == MAP_SYMBOLS["forest"]:
@@ -656,8 +682,12 @@ def finalize_state():
 
 # Function that prints the map to the console
 def print_map():
+    global color_stat
+    global round
     create_intro()
+    round += 1
     intro_color = the_most_color()
+    sorted_color = sorted(color_stat.items(), key=lambda item: item[1], reverse=True)
     c = 0
     x = 0
     i = 0
@@ -671,10 +701,12 @@ def print_map():
         try:
             print(f"{intro_color}{global_intro[i]}{MAP_COLORS['reset']}")
         except:
-            if i >= 20 and i < 20 + len(MAP_COLORS):
-                color = list(MAP_COLORS.keys())[i - 20]
-                color_symbol = color.ljust(19)
-                print(f"{MAP_COLORS[new_state_color]}   | {MAP_COLORS[color]}{color_symbol}{MAP_COLORS[new_state_color]}|{MAP_COLORS['reset']}")
+            if i >= 20 and i < 20 + len(sorted_color):
+                asni = sorted_color[i - 20][0]
+                stat = sorted_color[i - 20][1]
+                color_name = asni_to_color_name(asni)
+                color_symbol = (str(i - 20 + 1) + ' ' + color_name.ljust(12) + str(stat)).ljust(19)
+                print(f"{MAP_COLORS[new_state_color]}   | {asni}{color_symbol}{MAP_COLORS[new_state_color]}|{MAP_COLORS['reset']}")
             else:
                 print(f"{MAP_COLORS[new_state_color]}   |                    |{MAP_COLORS['reset']}")
     print("")
@@ -703,7 +735,7 @@ def war(home_state_color):
         color = random.choice(list(MAP_COLORS.keys())[:len(MAP_COLORS) - 1])
         if MAP_COLORS[color] in global_color.values() and color != home_state_color:
             break
-    war_size = random.randint(1, 15)
+    war_size = random.randint(1, 20)
     curve_corners_by_color(color, MAP_PARAMS["curve_corner_by_color_param"] * war_size)
 
 
